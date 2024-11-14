@@ -1,0 +1,508 @@
+---
+title: "NYC Air Quality"
+author: "Minh Tran"
+date: "11-14-2024"
+output: html_document
+
+---
+# New York City air quality surveillance report
+
+2024-11-06
+
+## Introduction
+
+In our project, we analyze if air quality in New York City increased
+during last years. For these purposes, we use New York City air quality
+surveillance data (https://catalog.data.gov/dataset/air-quality). We 
+investigate dynamics of 18 indexes of air quality. Some of them are considered
+separately for adults and children. Our dataset consists of 18,025 observations.
+One observation is value for some index for some period for some geo place.
+Respectively, values for all indexes that are presented on plots are averaged
+by geo places. In general, our data covers period 2005-2022 but for some
+indexes it is narrower.
+
+## Data preparation
+
+```{r, warning = FALSE, message = FALSE}
+#Libraries used:
+library(readr)
+library(ggplot2)
+library(tidyverse)
+```
+
+```{r}
+#Data loading:
+data <- read_csv("Air_Quality.csv", show_col_types = FALSE)
+glimpse(data)
+```
+
+```{r}
+#Creation of subsets for every indicator:
+data_1 <- data[data$Name == "Annual vehicle miles traveled",]
+data_2 <- data[data$Name == "Annual vehicle miles traveled (trucks)",]
+data_3_1 <- data[ (data$Name == "Asthma emergency departments visits due to Ozone") &
+                   (data$Measure == "Estimated annual rate (age 18+)"),]
+data_3_2 <- data[data$Name == "Asthma emergency departments visits due to Ozone" &
+                  (data$Measure == "Estimated annual rate (under age 18)"),]
+data_4 <- data[data$Name == "Boiler Emissions- Total NOx Emissions",]
+data_5 <- data[data$Name == "Boiler Emissions- Total SO2 Emissions",]
+data_6 <- data[data$Name == "Cardiovascular hospitalizations due to PM2.5 (age 40+)",]
+data_7 <- data[data$Name == "Fine particles (PM 2.5)" & grepl("Annual Average", data$`Time Period`),]
+data_8 <- data[data$Name == "Outdoor Air Toxics - Benzene",]
+data_9 <- data[data$Name == "Ozone (O3)" & grepl("Summer 20", data$`Time Period`),]
+data_10 <- data[data$Name == "Annual vehicle miles traveled (cars)",]
+data_11_1 <- data[(data$Name == "Asthma emergency department visits due to PM2.5") &
+                    (data$Measure == "Estimated annual rate (age 18+)"),]
+data_11_2 <- data[data$Name == "Asthma emergency department visits due to PM2.5" &
+                    (data$Measure == "Estimated annual rate (under age 18)"),]
+data_12_1 <- data[data$Name == "Asthma hospitalizations due to Ozone" &
+                  (data$Measure == "Estimated annual rate (age 18+)"),]
+data_12_2 <- data[data$Name == "Asthma hospitalizations due to Ozone" &
+                  (data$Measure == "Estimated annual rate (under age 18)"),]
+data_13 <- data[data$Name == "Boiler Emissions- Total PM2.5 Emissions",]
+data_14 <- data[data$Name == "Cardiac and respiratory deaths due to Ozone",]
+data_15 <- data[data$Name == "Deaths due to PM2.5",]
+data_16 <- data[data$Name == "Nitrogen dioxide (NO2)" & grepl("Annual Average", data$`Time Period`),]
+data_17 <- data[data$Name == "Outdoor Air Toxics - Formaldehyde",]
+data_18 <- data[data$Name == "Respiratory hospitalizations due to PM2.5 (age 20+)",]
+```
+
+```{r}
+#Calculation of average values of indicators for every time period:
+averaged_data_1 <- aggregate(data_1$`Data Value`, by = list(data_1$`Time Period`), FUN = mean)
+averaged_data_2 <- aggregate(data_2$`Data Value`, by = list(data_2$`Time Period`), FUN = mean)
+averaged_data_3_1 <- aggregate(data_3_1$`Data Value`, by = list(data_3_1$`Time Period`), FUN = mean)
+averaged_data_3_2 <- aggregate(data_3_2$`Data Value`, by = list(data_3_2$`Time Period`), FUN = mean)
+averaged_data_4 <- aggregate(data_4$`Data Value`, by = list(data_4$`Time Period`), FUN = mean)
+averaged_data_5 <- aggregate(data_5$`Data Value`, by = list(data_5$`Time Period`), FUN = mean)
+averaged_data_6 <- aggregate(data_6$`Data Value`, by = list(data_6$`Time Period`), FUN = mean)
+averaged_data_7 <- aggregate(data_7$`Data Value`, by = list(data_7$`Time Period`), FUN = mean)
+averaged_data_8 <- aggregate(data_8$`Data Value`, by = list(data_8$`Time Period`), FUN = mean)
+averaged_data_9 <- aggregate(data_9$`Data Value`, by = list(data_9$`Time Period`), FUN = mean)
+averaged_data_10 <- aggregate(data_10$`Data Value`, by = list(data_10$`Time Period`), FUN = mean)
+averaged_data_11_1 <- aggregate(data_11_1$`Data Value`, by = list(data_11_1$`Time Period`), FUN = mean)
+averaged_data_11_2 <- aggregate(data_11_2$`Data Value`, by = list(data_11_2$`Time Period`), FUN = mean)
+averaged_data_12_1 <- aggregate(data_12_1$`Data Value`, by = list(data_12_1$`Time Period`), FUN = mean)
+averaged_data_12_2 <- aggregate(data_12_2$`Data Value`, by = list(data_12_2$`Time Period`), FUN = mean)
+averaged_data_13 <- aggregate(data_13$`Data Value`, by = list(data_13$`Time Period`), FUN = mean)
+averaged_data_14 <- aggregate(data_14$`Data Value`, by = list(data_14$`Time Period`), FUN = mean)
+averaged_data_15 <- aggregate(data_15$`Data Value`, by = list(data_15$`Time Period`), FUN = mean)
+averaged_data_16 <- aggregate(data_16$`Data Value`, by = list(data_16$`Time Period`), FUN = mean)
+averaged_data_17 <- aggregate(data_17$`Data Value`, by = list(data_17$`Time Period`), FUN = mean)
+averaged_data_18 <- aggregate(data_18$`Data Value`, by = list(data_18$`Time Period`), FUN = mean)
+```
+
+```{r}
+#Renaming columns for averaged dataframes:
+colnames(averaged_data_1) <- c("Period", "Value")
+colnames(averaged_data_2) <- c("Period", "Value")
+colnames(averaged_data_3_1) <- c("Period", "Value")
+colnames(averaged_data_3_2) <- c("Period", "Value")
+colnames(averaged_data_4) <- c("Period", "Value")
+colnames(averaged_data_5) <- c("Period", "Value")
+colnames(averaged_data_6) <- c("Period", "Value")
+colnames(averaged_data_7) <- c("Period", "Value")
+colnames(averaged_data_8) <- c("Period", "Value")
+colnames(averaged_data_9) <- c("Period", "Value")
+colnames(averaged_data_10) <- c("Period", "Value")
+colnames(averaged_data_11_1) <- c("Period", "Value")
+colnames(averaged_data_11_2) <- c("Period", "Value")
+colnames(averaged_data_12_1) <- c("Period", "Value")
+colnames(averaged_data_12_2) <- c("Period", "Value")
+colnames(averaged_data_13) <- c("Period", "Value")
+colnames(averaged_data_14) <- c("Period", "Value")
+colnames(averaged_data_15) <- c("Period", "Value")
+colnames(averaged_data_16) <- c("Period", "Value")
+colnames(averaged_data_17) <- c("Period", "Value")
+colnames(averaged_data_18) <- c("Period", "Value")
+```
+
+## 1. Annual vehicle miles traveled
+```{r}
+#Table with values of indicator:
+averaged_data_1
+
+#Linear plot for indicator by time:
+ggplot(averaged_data_1, aes(x = Period, y = Value, group = 1)) +
+  geom_point() +
+  geom_line() +
+  labs(title = "Average annual vehicle miles traveled",
+       x = "Time period",
+       y = "Million miles per square mile")
+```
+
+Average annual vehicle miles traveled grew from 67.17757 million miles per
+square mile	in 2005 to 79.96636 million miles per square mile in 2019. It tells
+us about potential decrease of air quality.
+
+## 2. Annual vehicle miles traveled (trucks)
+```{r}
+#Table with values of indicator:
+averaged_data_2
+
+#Linear plot for indicator by time:
+ggplot(averaged_data_2, aes(x = Period, y = Value, group = 1)) +
+  geom_point() +
+  geom_line() +
+  labs(title = "Average annual vehicle miles traveled (trucks)",
+       x = "Time period",
+       y = "Million miles per square mile")
+```
+
+Average annual vehicle miles traveled by trucks grew from 3.767290 million miles
+per square mile	in 2005 to 4.477570 million miles per square mile in 2019. It
+tells us about potential decrease of air quality.
+
+## 3.1. Asthma emergency departments visits due to Ozone, age 18+
+```{r}
+#Table with values of indicator:
+averaged_data_3_1
+
+#Linear plot for indicator by time:
+ggplot(averaged_data_3_1, aes(x = Period, y = Value, group = 1)) +
+  geom_point() +
+  geom_line() +
+  labs(title = "Average asthma emergency departments visits due to Ozone, age 18+",
+       x = "Time period",
+       y = "Estimated annual rate per 100,000 adults")
+```
+
+Average asthma emergency departments visits due to Ozone fell from 48.41458 per
+100,000 adults in 2005-2007 to 41.33333	per 100,000 adults in 2017-2019. It
+tells us about potential increase of air quality.
+
+## 3.2. Asthma emergency departments visits due to Ozone, under age 18
+```{r}
+#Table with values of indicator:
+averaged_data_3_2
+
+#Linear plot for indicator by time:
+ggplot(averaged_data_3_2, aes(x = Period, y = Value, group = 1)) +
+  geom_point() +
+  geom_line() +
+  labs(title = "Average asthma emergency departments visits due to Ozone, under age 18",
+       x = "Time period",
+       y = "Estimated annual rate per 100,000 children")
+```
+
+Average asthma emergency departments visits due to Ozone fell from 86.98958 per
+100,000 children in 2005-2007 to 79.88679	per 100,000 children in 2017-2019. It
+tells us about potential increase of air quality.
+
+## 4. Boiler Emissions - Total NOx Emissions
+```{r}
+#Table with values of indicator:
+averaged_data_4
+
+#Linear plot for indicator by time:
+ggplot(averaged_data_4, aes(x = Period, y = Value, group = 1)) +
+  geom_point() +
+  geom_line() +
+  labs(title = "Average Boiler Emissions - Total NOx Emissions",
+       x = "Time period",
+       y = "Number per km2")
+```
+
+Average Boiler Emissions - Total NOx Emissions fell from 56.30000 per
+km2 in 2013 to 51.28333 per km2 in 2015. It
+tells us about potential increase of air quality.
+
+## 5. Boiler Emissions- Total SO2 Emissions
+```{r}
+#Table with values of indicator:
+averaged_data_5
+
+#Linear plot for indicator by time:
+ggplot(averaged_data_5, aes(x = Period, y = Value, group = 1)) +
+  geom_point() +
+  geom_line() +
+  labs(title = "Average Boiler Emissions - Total SO2 Emissions",
+       x = "Time period",
+       y = "Number per km2")
+```
+
+Average Boiler Emissions - Total SO2 Emissions fell from 14.231250 per
+km2 in 2013 to 7.752083 per km2 in 2015. It
+tells us about potential increase of air quality.
+
+## 6. Cardiovascular hospitalizations due to PM2.5, age 40+
+```{r}
+#Table with values of indicator:
+averaged_data_6
+
+#Linear plot for indicator by time:
+ggplot(averaged_data_6, aes(x = Period, y = Value, group = 1)) +
+  geom_point() +
+  geom_line() +
+  labs(title = "Average Cardiovascular hospitalizations due to PM2.5, age 40+",
+       x = "Time period",
+       y = "Estimated annual rate per 100,000 adults")
+```
+
+Average cardiovascular hospitalizations due to PM2.5 for people older than 40 years
+fell from 26.150000 per 100,000 adults in 2005-2007 to 9.645833	per 100,000
+adults in 2017-2019. It tells us about potential increase of air quality.
+
+## 7. Fine particles (PM 2.5)
+```{r}
+#Table with values of indicator:
+averaged_data_7$Period <- gsub("Annual Average ", "", averaged_data_7$Period)
+averaged_data_7
+
+#Linear plot for indicator by time:
+ggplot(averaged_data_7, aes(x = Period, y = Value, group = 1)) +
+  geom_point() +
+  geom_line() +
+  labs(title = "Average Fine particles (PM 2.5)",
+       x = "Time period",
+       y = "mcg/m3")
+```
+
+Average Fine particles (PM 2.5) fell from 10.986525 mcg/m3 in 2009 to 6.067376
+mcg/m3 in 2022. It tells us about potential increase of air quality.
+
+## 8. Outdoor Air Toxics - Benzene
+```{r}
+#Table with values of indicator:
+averaged_data_8
+
+#Linear plot for indicator by time:
+ggplot(averaged_data_8, aes(x = Period, y = Value, group = 1)) +
+  geom_point() +
+  geom_line() +
+  labs(title = "Average Outdoor Air Toxics - Benzene",
+       x = "Time period",
+       y = "Annual average concentration µg/m3")
+```
+
+Average Outdoor Air Toxics - Benzene fell from 2.910417 µg/m3 in 2005 to 0.925000
+µg/m3 in 2014. It tells us about potential increase of air quality.
+
+## 9. Ozone (O3)
+```{r}
+#Table with values of indicator:
+averaged_data_9$Period <- gsub("Summer ", "", averaged_data_9$Period)
+averaged_data_9
+
+#Linear plot for indicator by time:
+ggplot(averaged_data_9, aes(x = Period, y = Value, group = 1)) +
+  geom_point() +
+  geom_line() +
+  labs(title = "Average Ozone (O3)",
+       x = "Time period",
+       y = "ppb")
+```
+
+Average Ozone (O3) grew from 24.76879 ppb in 2009 to 33.15603
+ppb in 2022. It tells us about potential decrease of air quality.
+
+## 10. Annual vehicle miles traveled (cars)
+```{r}
+#Table with values of indicator:
+averaged_data_10
+
+#Linear plot for indicator by time:
+ggplot(averaged_data_10, aes(x = Period, y = Value, group = 1)) +
+  geom_point() +
+  geom_line() +
+  labs(title = "Average Annual vehicle miles traveled (cars)",
+       x = "Time period",
+       y = "Million miles per square mile")
+```
+
+Average annual vehicle miles traveled by cars grew from 62.80374 million miles
+per square mile	in 2005 to 72.91121 million miles per square mile in 2019. It
+tells us about potential decrease of air quality.
+
+## 11.1. Asthma emergency department visits due to PM2.5, age 18+
+```{r}
+#Table with values of indicator:
+averaged_data_11_1
+
+#Linear plot for indicator by time:
+ggplot(averaged_data_11_1, aes(x = Period, y = Value, group = 1)) +
+  geom_point() +
+  geom_line() +
+  labs(title = "Average asthma emergency department visits due to PM2.5, age 18+",
+       x = "Time period",
+       y = "Estimated annual rate per 100,000 adults")
+```
+
+Average asthma emergency departments visits due to PM2.5 fell from 61.17917 per
+100,000 adults in 2005-2007 to 28.75000	per 100,000 adults in 2017-2019. It
+tells us about potential increase of air quality.
+
+## 11.2. Asthma emergency department visits due to PM2.5, under age 18
+```{r}
+#Table with values of indicator:
+averaged_data_11_2
+
+#Linear plot for indicator by time:
+ggplot(averaged_data_11_2, aes(x = Period, y = Value, group = 1)) +
+  geom_point() +
+  geom_line() +
+  labs(title = "Average asthma emergency department visits due to PM2.5, under age 18",
+       x = "Time period",
+       y = "Estimated annual rate per 100,000 children")
+```
+
+Average asthma emergency departments visits due to PM2.5 fell from 119.68542 per
+100,000 children in 2005-2007 to 58.41667	per 100,000 children in 2017-2019. It
+tells us about potential increase of air quality.
+
+## 12.1. Asthma hospitalizations due to Ozone, age 18+
+```{r}
+#Table with values of indicator:
+averaged_data_12_1
+
+#Linear plot for indicator by time:
+ggplot(averaged_data_12_1, aes(x = Period, y = Value, group = 1)) +
+  geom_point() +
+  geom_line() +
+  labs(title = "Average asthma hospitalizations due to Ozone, age 18+",
+       x = "Time period",
+       y = "Estimated annual rate per 100,000 adults")
+```
+
+Average asthma hospitalizations due to Ozone fell from 7.514583 per 100,000
+adults in 2005-2007 to 2.729167	per 100,000
+adults in 2017-2019. It tells us about potential increase of air quality.
+
+## 12.2 Asthma hospitalizations due to Ozone, under age 18
+```{r}
+#Table with values of indicator:
+averaged_data_12_2
+
+#Linear plot for indicator by time:
+ggplot(averaged_data_12_2, aes(x = Period, y = Value, group = 1)) +
+  geom_point() +
+  geom_line() +
+  labs(title = "Average asthma hospitalizations due to Ozone, under age 18",
+       x = "Time period",
+       y = "Estimated annual rate per 100,000 children")
+```
+
+Average asthma hospitalizations due to Ozone fell from 19.53333 per 100,000
+children in 2005-2007 to 14.50000	per 100,000
+children in 2017-2019. It tells us about potential increase of air quality.
+
+## 13. Boiler Emissions - Total PM2.5 Emissions
+```{r}
+#Table with values of indicator:
+averaged_data_13
+
+#Linear plot for indicator by time:
+ggplot(averaged_data_13, aes(x = Period, y = Value, group = 1)) +
+  geom_point() +
+  geom_line() +
+  labs(title = "Average Boiler Emissions - Total PM2.5 Emissions",
+       x = "Time period",
+       y = "Number per km2")
+```
+
+Average Boiler Emissions - Total PM2.5 Emissions fell from 1.660417 per
+km2 in 2013 to 1.087500 per km2 in 2015. It
+tells us about potential increase of air quality.
+
+## 14. Cardiac and respiratory deaths due to Ozone
+```{r}
+#Table with values of indicator:
+averaged_data_14
+
+#Linear plot for indicator by time:
+ggplot(averaged_data_14, aes(x = Period, y = Value, group = 1)) +
+  geom_point() +
+  geom_line() +
+  labs(title = "Average cardiac and respiratory deaths due to Ozone",
+       x = "Time period",
+       y = "Estimated annual rate per 100,000")
+```
+
+Average cardiac and respiratory deaths due to Ozone fell from 5.085417 per
+100,000 in 2005-2007 to 4.854167 per 100,000 in 2017-2019. It
+tells us about potential increase of air quality.
+
+## 15. Deaths due to PM2.5
+```{r}
+#Table with values of indicator:
+averaged_data_15
+
+#Linear plot for indicator by time:
+ggplot(averaged_data_15, aes(x = Period, y = Value, group = 1)) +
+  geom_point() +
+  geom_line() +
+  labs(title = "Average deaths due to PM2.5, age 30+",
+       x = "Time period",
+       y = "Estimated annual rate per 100,000 adults")
+```
+
+Average deaths due to PM2.5 for people older than 30 years fell from 66.90833 per
+100,000 adults in 2005-2007 to 33.91667 per 100,000 adults in 2017-2019. It
+tells us about potential increase of air quality.
+
+## 16. Nitrogen dioxide (NO2)
+```{r}
+#Table with values of indicator:
+averaged_data_16$Period <- gsub("Annual Average ", "", averaged_data_16$Period)
+averaged_data_16
+
+#Linear plot for indicator by time:
+ggplot(averaged_data_16, aes(x = Period, y = Value, group = 1)) +
+  geom_point() +
+  geom_line() +
+  labs(title = "Average Nitrogen dioxide (NO2)",
+       x = "Time period",
+       y = "Mean ppb")
+```
+
+Average Nitrogen dioxide (NO2) fell from 25.75390 ppb in 2009 to 16.05461
+ppb in 2022. It tells us about potential increase of air quality.
+
+## 17. Outdoor Air Toxics - Formaldehyde
+```{r}
+#Table with values of indicator:
+averaged_data_17
+
+#Linear plot for indicator by time:
+ggplot(averaged_data_17, aes(x = Period, y = Value, group = 1)) +
+  geom_point() +
+  geom_line() +
+  labs(title = "Average Outdoor Air Toxics - Formaldehyde",
+       x = "Time period",
+       y = "Annual average concentration µg/m3")
+```
+
+Average Outdoor Air Toxics - Formaldehyde fell from 3.195833 µg/m3 in 2005 to
+1.537500 µg/m3 in 2014. It tells us about potential increase of air quality.
+
+## 18. Respiratory hospitalizations due to PM2.5, age 20+
+```{r}
+#Table with values of indicator:
+averaged_data_18
+
+#Linear plot for indicator by time:
+ggplot(averaged_data_18, aes(x = Period, y = Value, group = 1)) +
+  geom_point() +
+  geom_line() +
+  labs(title = "Average respiratory hospitalizations due to PM2.5, age 20+",
+       x = "Time period",
+       y = "Estimated annual rate per 100,000 adults")
+```
+
+Average respiratory hospitalizations due to PM2.5 for people older than 20 years
+fell from 20.72917 per 100,000 adults in 2005-2007 to 7.43750	per 100,000
+adults in 2017-2019. It tells us about potential increase of air quality.
+
+## Conclusion
+
+Almost all indicators of air quality in New York city were improved during
+the analyzed period. Some deterioration is observed in miles traveled by
+cars. However, increase in fuel efficiency of vehicles allowed to avoid
+growth of emissions. Some increase is also observed in average Ozone (O3).
+However, in general, air quality grew.
+
+
+
+
+
+
