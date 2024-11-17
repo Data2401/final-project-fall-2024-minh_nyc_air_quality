@@ -1,0 +1,166 @@
+---
+title: "NYC Air Quality"
+author: "Minh Tran"
+date: "11-14-2024"
+output: html_document
+
+---
+# New York City air quality surveillance report
+
+## Introduction
+
+In our project, we analyze if air quality in New York City increased
+during last years. For these purposes, we use New York City air quality
+surveillance data (https://catalog.data.gov/dataset/air-quality). We 
+investigate dynamics of 4 indicators of air quality. They are road traffic,  Ozone (O3),  Boiler Emissions, and Fine particles (PM 2.5).  Some of them are analyzed separately for adults and children such as Ozone (O3) and Fine particles (PM 2.5)  . Our dataset consists of 18,025 observations.
+One observation is value for each indicator, at some period and in a specific geo place. The values for all indexes that are presented on plots are averaged by geo places. In general, our data covers period 2005-2022 but for some indexes it is narrower.
+
+## Data preparation
+
+```{r, warning = FALSE, message = FALSE}
+
+library(readr)
+library(ggplot2)
+library(tidyverse)
+```
+
+```{r}
+#Data loading
+data <- read_csv("Air_Quality.csv", show_col_types = FALSE)
+glimpse(data)
+```
+
+```{r}
+#Creation of subsets for every indicator:
+data_1 <- data[data$Name == "Annual vehicle miles traveled",]
+data_2 <- data[data$Name == "Annual vehicle miles traveled (trucks)",]
+data_3_1 <- data[ (data$Name == "Asthma emergency departments visits due to Ozone") &
+                   (data$Measure == "Estimated annual rate (age 18+)"),]
+data_3_2 <- data[data$Name == "Asthma emergency departments visits due to Ozone" &
+                  (data$Measure == "Estimated annual rate (under age 18)"),]
+data_4 <- data[data$Name == "Boiler Emissions- Total NOx Emissions",]
+data_5 <- data[data$Name == "Boiler Emissions- Total SO2 Emissions",]
+data_6 <- data[data$Name == "Cardiovascular hospitalizations due to PM2.5 (age 40+)",]
+data_7 <- data[data$Name == "Fine particles (PM 2.5)" & grepl("Annual Average", data$`Time Period`),]
+data_8 <- data[data$Name == "Outdoor Air Toxics - Benzene",]
+data_9 <- data[data$Name == "Ozone (O3)" & grepl("Summer 20", data$`Time Period`),]
+data_10 <- data[data$Name == "Annual vehicle miles traveled (cars)",]
+data_11_1 <- data[(data$Name == "Asthma emergency department visits due to PM2.5") &
+                    (data$Measure == "Estimated annual rate (age 18+)"),]
+data_11_2 <- data[data$Name == "Asthma emergency department visits due to PM2.5" &
+                    (data$Measure == "Estimated annual rate (under age 18)"),]
+data_12_1 <- data[data$Name == "Asthma hospitalizations due to Ozone" &
+                  (data$Measure == "Estimated annual rate (age 18+)"),]
+data_12_2 <- data[data$Name == "Asthma hospitalizations due to Ozone" &
+                  (data$Measure == "Estimated annual rate (under age 18)"),]
+data_13 <- data[data$Name == "Boiler Emissions- Total PM2.5 Emissions",]
+data_14 <- data[data$Name == "Cardiac and respiratory deaths due to Ozone",]
+data_15 <- data[data$Name == "Deaths due to PM2.5",]
+data_16 <- data[data$Name == "Nitrogen dioxide (NO2)" & grepl("Annual Average", data$`Time Period`),]
+data_17 <- data[data$Name == "Outdoor Air Toxics - Formaldehyde",]
+data_18 <- data[data$Name == "Respiratory hospitalizations due to PM2.5 (age 20+)",]
+```
+
+```{r}
+#Calculation of average values of indicators for every time period:
+averaged_data_1 <- aggregate(data_1$`Data Value`, by = list(data_1$`Time Period`), FUN = mean)
+averaged_data_2 <- aggregate(data_2$`Data Value`, by = list(data_2$`Time Period`), FUN = mean)
+averaged_data_3_1 <- aggregate(data_3_1$`Data Value`, by = list(data_3_1$`Time Period`), FUN = mean)
+averaged_data_3_2 <- aggregate(data_3_2$`Data Value`, by = list(data_3_2$`Time Period`), FUN = mean)
+averaged_data_4 <- aggregate(data_4$`Data Value`, by = list(data_4$`Time Period`), FUN = mean)
+averaged_data_5 <- aggregate(data_5$`Data Value`, by = list(data_5$`Time Period`), FUN = mean)
+averaged_data_6 <- aggregate(data_6$`Data Value`, by = list(data_6$`Time Period`), FUN = mean)
+averaged_data_7 <- aggregate(data_7$`Data Value`, by = list(data_7$`Time Period`), FUN = mean)
+averaged_data_8 <- aggregate(data_8$`Data Value`, by = list(data_8$`Time Period`), FUN = mean)
+averaged_data_9 <- aggregate(data_9$`Data Value`, by = list(data_9$`Time Period`), FUN = mean)
+averaged_data_10 <- aggregate(data_10$`Data Value`, by = list(data_10$`Time Period`), FUN = mean)
+averaged_data_11_1 <- aggregate(data_11_1$`Data Value`, by = list(data_11_1$`Time Period`), FUN = mean)
+averaged_data_11_2 <- aggregate(data_11_2$`Data Value`, by = list(data_11_2$`Time Period`), FUN = mean)
+averaged_data_12_1 <- aggregate(data_12_1$`Data Value`, by = list(data_12_1$`Time Period`), FUN = mean)
+averaged_data_12_2 <- aggregate(data_12_2$`Data Value`, by = list(data_12_2$`Time Period`), FUN = mean)
+averaged_data_13 <- aggregate(data_13$`Data Value`, by = list(data_13$`Time Period`), FUN = mean)
+averaged_data_14 <- aggregate(data_14$`Data Value`, by = list(data_14$`Time Period`), FUN = mean)
+averaged_data_15 <- aggregate(data_15$`Data Value`, by = list(data_15$`Time Period`), FUN = mean)
+averaged_data_16 <- aggregate(data_16$`Data Value`, by = list(data_16$`Time Period`), FUN = mean)
+averaged_data_17 <- aggregate(data_17$`Data Value`, by = list(data_17$`Time Period`), FUN = mean)
+averaged_data_18 <- aggregate(data_18$`Data Value`, by = list(data_18$`Time Period`), FUN = mean)
+```
+
+```{r}
+#Renaming columns for averaged dataframes:
+colnames(averaged_data_1) <- c("Period", "Value")
+colnames(averaged_data_2) <- c("Period", "Value")
+colnames(averaged_data_3_1) <- c("Period", "Value")
+colnames(averaged_data_3_2) <- c("Period", "Value")
+colnames(averaged_data_4) <- c("Period", "Value")
+colnames(averaged_data_5) <- c("Period", "Value")
+colnames(averaged_data_6) <- c("Period", "Value")
+colnames(averaged_data_7) <- c("Period", "Value")
+colnames(averaged_data_8) <- c("Period", "Value")
+colnames(averaged_data_9) <- c("Period", "Value")
+colnames(averaged_data_10) <- c("Period", "Value")
+colnames(averaged_data_11_1) <- c("Period", "Value")
+colnames(averaged_data_11_2) <- c("Period", "Value")
+colnames(averaged_data_12_1) <- c("Period", "Value")
+colnames(averaged_data_12_2) <- c("Period", "Value")
+colnames(averaged_data_13) <- c("Period", "Value")
+colnames(averaged_data_14) <- c("Period", "Value")
+colnames(averaged_data_15) <- c("Period", "Value")
+colnames(averaged_data_16) <- c("Period", "Value")
+colnames(averaged_data_17) <- c("Period", "Value")
+colnames(averaged_data_18) <- c("Period", "Value")
+```
+
+## 1. Road traffic
+  - Let's look at how road traffic contributes to air pollution by looking at the number of miles traveled by cars and trucks, and the total for both vehicles. 
+```{r}
+library(tidyverse)
+
+traffic_plot <- ggplot(averaged_data_1, aes(x = Period, y = Value, group = 1,fill = "both")) +
+  geom_col() +
+  geom_col(data = averaged_data_10, aes(x = Period, y = Value, group = 1,fill = "cars")) +
+  geom_col(data = averaged_data_2, aes(x = Period, y = Value, group = 1,fill = "trucks")) +
+  
+  labs(title = "Average annual vehicle miles traveled",
+       x = "Time period",
+       y = "Million miles per square mile")
+
+traffic_plot
+
+```
+  
+- It's obviously that the number of miles traveled by cars and trucks increased from 2005 to 2019. In which, 3.767290 million miles per square mile to 4.477570 million miles per square mile for trucks, and 62.80374 million miles per square mile in 2005 to 72.91121 million miles per square mile in 2019 for car. 
+- To better understand how road traffic is affecting air quality, let's look at the toxic chemicals emitted from this factor. Here we will examine 03 Outdoor Air Toxic, which are Benzene, Nitrogen dioxide (NO2) and Formaldehyde. These three substances are mainly produced from Vehicles Exhaust Systems during the combustion process of the engines. Hence, let's look at the amount of them released into the air. 
+    
+```{r fig.width= 10}
+library(cowplot)
+
+Benzene_Formaldehyde <- ggplot(averaged_data_8, aes(x = Period, y = Value, group = 1,color = "Benzene")) +
+  geom_line() +
+  geom_line(data = averaged_data_17, aes(x = Period, y = Value, group = 1,color = "Formaldehyde")) +
+  labs(title = "Concentration in Air ", subtitle = "Formaldehyde and Benzene",
+       x = "Time period",
+       y = "Annual average concentration µg/m3")
+
+
+
+#Remove Annual Average 
+averaged_data_16$Period <- gsub("Annual Average ", "", averaged_data_16$Period)
+
+NO2 <- ggplot(averaged_data_16, aes(x = Period, y = Value, group = 1)) +
+  geom_point() +
+  geom_line() +
+  labs(title = "Average Nitrogen dioxide (NO2)",
+       x = "Time period",
+       y = "Mean ppb") #+ 
+   #theme(axis.text.x = element_text(angle=90, hjust=1))
+
+
+
+plot_grid(Benzene_Formaldehyde, NO2, labels = NA)
+```
+
+    
+    
+
+  
