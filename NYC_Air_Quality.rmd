@@ -18,19 +18,22 @@ One observation is value for each indicator, at some period and in a specific ge
 ## Data preparation
 
 ```{r, warning = FALSE, message = FALSE}
-
+knitr::opts_chunk$set(echo = F, warning = FALSE, message = FALSE)
 library(readr)
 library(ggplot2)
 library(tidyverse)
+library(cowplot)
 ```
 
 ```{r}
 #Data loading
 data <- read_csv("Air_Quality.csv", show_col_types = FALSE)
 glimpse(data)
+
 ```
 
-```{r}
+
+```{r, echo = F}
 #Creation of subsets for every indicator:
 data_1 <- data[data$Name == "Annual vehicle miles traveled",]
 data_2 <- data[data$Name == "Annual vehicle miles traveled (trucks)",]
@@ -61,7 +64,7 @@ data_17 <- data[data$Name == "Outdoor Air Toxics - Formaldehyde",]
 data_18 <- data[data$Name == "Respiratory hospitalizations due to PM2.5 (age 20+)",]
 ```
 
-```{r}
+```{r, echo = F}
 #Calculation of average values of indicators for every time period:
 averaged_data_1 <- aggregate(data_1$`Data Value`, by = list(data_1$`Time Period`), FUN = mean)
 averaged_data_2 <- aggregate(data_2$`Data Value`, by = list(data_2$`Time Period`), FUN = mean)
@@ -86,7 +89,7 @@ averaged_data_17 <- aggregate(data_17$`Data Value`, by = list(data_17$`Time Peri
 averaged_data_18 <- aggregate(data_18$`Data Value`, by = list(data_18$`Time Period`), FUN = mean)
 ```
 
-```{r}
+```{r, echo = F}
 #Renaming columns for averaged dataframes:
 colnames(averaged_data_1) <- c("Period", "Value")
 colnames(averaged_data_2) <- c("Period", "Value")
@@ -113,7 +116,7 @@ colnames(averaged_data_18) <- c("Period", "Value")
 
 ## 1. Road traffic
   - Let's look at how road traffic contributes to air pollution by looking at the number of miles traveled by cars and trucks, and the total for both vehicles. 
-```{r}
+```{r echo = F}
 library(tidyverse)
 
 traffic_plot <- ggplot(averaged_data_1, aes(x = Period, y = Value, group = 1,fill = "both")) +
@@ -132,15 +135,19 @@ traffic_plot
 - It's obviously that the number of miles traveled by cars and trucks increased from 2005 to 2019. In which, 3.767290 million miles per square mile to 4.477570 million miles per square mile for trucks, and 62.80374 million miles per square mile in 2005 to 72.91121 million miles per square mile in 2019 for car. 
 - To better understand how road traffic is affecting air quality, let's look at the toxic chemicals emitted from this factor. Here we will examine 03 Outdoor Air Toxic, which are Benzene, Nitrogen dioxide (NO2) and Formaldehyde. These three substances are mainly produced from Vehicles Exhaust Systems during the combustion process of the engines. Hence, let's look at the amount of them released into the air. 
     
-```{r fig.width= 10}
+```{r fig.width= 10, echo = F}
 library(cowplot)
 
-Benzene_Formaldehyde <- ggplot(averaged_data_8, aes(x = Period, y = Value, group = 1,color = "Benzene")) +
-  geom_line() +
-  geom_line(data = averaged_data_17, aes(x = Period, y = Value, group = 1,color = "Formaldehyde")) +
+Benzene_Formaldehyde <- ggplot(averaged_data_8, aes(x = as.numeric(Period), y = Value, group = 1,color = "Benzene")) +
+  geom_line() + 
+  geom_point(data = averaged_data_8, aes(x = as.numeric(Period), y = Value, group = 1,color = "Benzene")) +
+  
+  geom_line(data = averaged_data_17, aes(x = as.numeric(Period), y = Value, group = 1,color = "Formaldehyde")) +
+  geom_point(data = averaged_data_17, aes(x = as.numeric(Period), y = Value, group = 1,color = "Formaldehyde")) +
+  
   labs(title = "Concentration in Air ", subtitle = "Formaldehyde and Benzene",
        x = "Time period",
-       y = "Annual average concentration µg/m3")
+       y = "Annual average concentration ug/m3", color = "Substances")
 
 
 
@@ -158,9 +165,46 @@ NO2 <- ggplot(averaged_data_16, aes(x = Period, y = Value, group = 1)) +
 
 
 plot_grid(Benzene_Formaldehyde, NO2, labels = NA)
+
 ```
 
-    
+  
+## 2. Ozone 
+- As I researched on Google, Ozone is a major air quality hazard in the summer because of the weather conditions that favor its formation. This would be the reason why the dataset just record the Ozone amount during summers from 2009 to 2022.
+
+Sources: “Ozone Pollution, the Air Quality Hazard of the Summer.” Copernicus, atmosphere.copernicus.eu/ozone-pollution-air-quality-hazard-summer#:~:text=Ozone%20(O3)%2C%20is%20a,European%20Ambient%20Air%20Quality%20Directive. Accessed 19 Nov. 2024. 
+
+- Before we observe how Ozone concentration has changed , let's look at how it distributed at different neighborhoods around NYC in 2009 
+
+```{r, echo=FALSE}
+library(nycgeo)
+library(sf)
+
+ozone3_2009 <- data %>% 
+  filter(Name == "Ozone (O3)",`Time Period` == "Summer 2009")
+ozone3_2009
+
+# Change data type for `Geo Join ID` to char before joining 
+ozone3_2009 <- ozone3_2009 %>% 
+  mutate(`Geo Join ID`= as.character(`Geo Join ID`))
+
+# Graphing 
+nyc_boundaries(geography = "cd") %>% 
+  inner_join(ozone3_2009, by = c("borough_cd_id" = "Geo Join ID")) %>% 
+  ggplot() +
+  geom_sf(aes(fill = `Data Value`)) +
+  scale_fill_viridis_c(name = "Ozone 3 ppb", option = "inferno") +
+  theme_void() +
+  theme(panel.grid = element_line(color = "transparent")) +
+  labs(title = "Which neighborhoods have high levels of Ozone 3 pollution?")
+```
+```{r}
+knitr::kable(averaged_data_14, caption = "Table of data_14")
+averaged_data_14
+```
+
+
+
     
 
   
