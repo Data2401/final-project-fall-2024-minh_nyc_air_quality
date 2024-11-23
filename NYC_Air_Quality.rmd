@@ -9,7 +9,7 @@ output: html_document
 
 ## Introduction
 
-In our project, we analyze if air quality in New York City increased
+In our project, we analyze if air quality in New York City (NYC) increased
 during last years. For these purposes, we use New York City air quality
 surveillance data (https://catalog.data.gov/dataset/air-quality). We 
 investigate dynamics of 4 indicators of air quality. They are road traffic,  Ozone (O3),  Boiler Emissions, and Fine particles (PM 2.5).  Some of them are analyzed separately for adults and children such as Ozone (O3) and Fine particles (PM 2.5)  . Our dataset consists of 18,025 observations.
@@ -115,95 +115,140 @@ colnames(averaged_data_18) <- c("Period", "Value")
 ```
 
 ## 1. Road traffic
-  - Let's look at how road traffic contributes to air pollution by looking at the number of miles traveled by cars and trucks, and the total for both vehicles. 
+  - Let's look at how road traffic contributes to air pollution by looking at the number of miles traveled by cars and trucks.
 ```{r echo = F}
 library(tidyverse)
 
-traffic_plot <- ggplot(averaged_data_1, aes(x = Period, y = Value, group = 1,fill = "both")) +
+traffic_plot <- ggplot(data = averaged_data_10, aes(x = Period, y = Value, group = 1,fill = "cars")) +
   geom_col() +
-  geom_col(data = averaged_data_10, aes(x = Period, y = Value, group = 1,fill = "cars")) +
   geom_col(data = averaged_data_2, aes(x = Period, y = Value, group = 1,fill = "trucks")) +
+  
   
   labs(title = "Average annual vehicle miles traveled",
        x = "Time period",
-       y = "Million miles per square mile")
+       y = "Million miles per square mile", fill = "Vehicles")
 
 traffic_plot
 
 ```
   
 - It's obviously that the number of miles traveled by cars and trucks increased from 2005 to 2019. In which, 3.767290 million miles per square mile to 4.477570 million miles per square mile for trucks, and 62.80374 million miles per square mile in 2005 to 72.91121 million miles per square mile in 2019 for car. 
-- To better understand how road traffic is affecting air quality, let's look at the toxic chemicals emitted from this factor. Here we will examine 03 Outdoor Air Toxic, which are Benzene, Nitrogen dioxide (NO2) and Formaldehyde. These three substances are mainly produced from Vehicles Exhaust Systems during the combustion process of the engines. Hence, let's look at the amount of them released into the air. 
+- To better understand how road traffic is affecting air quality, let's look at the toxic chemicals emitted from this factor. Here we will examine the measured amounts of Benzene, Nitrogen dioxide (NO2) and Formaldehyde. These three substances are mainly produced from Vehicles Exhaust Systems during the combustion process of the engines. Hence, let's look at how much they were released into the air. 
     
 ```{r fig.width= 10, echo = F}
 library(cowplot)
-
-Benzene_Formaldehyde <- ggplot(averaged_data_8, aes(x = as.numeric(Period), y = Value, group = 1,color = "Benzene")) +
-  geom_line() + 
-  geom_point(data = averaged_data_8, aes(x = as.numeric(Period), y = Value, group = 1,color = "Benzene")) +
-  
-  geom_line(data = averaged_data_17, aes(x = as.numeric(Period), y = Value, group = 1,color = "Formaldehyde")) +
-  geom_point(data = averaged_data_17, aes(x = as.numeric(Period), y = Value, group = 1,color = "Formaldehyde")) +
-  
-  labs(title = "Concentration in Air ", subtitle = "Formaldehyde and Benzene",
-       x = "Time period",
-       y = "Annual average concentration ug/m3", color = "Substances")
-
-
-
-#Remove Annual Average 
+#Remove Annual Average string in the data for NO2 plot  
 averaged_data_16$Period <- gsub("Annual Average ", "", averaged_data_16$Period)
 
+# These two substances have the same unit of measurement, and time of observation so I put them into one graph. 
+Benzene_Formaldehyde <- ggplot(averaged_data_8, aes(x = Period, y = Value, group = 1,color = "Benzene")) +
+  geom_line(size = 1) + 
+  geom_point(data = averaged_data_8, aes(x = Period, y = Value, group = 1,color = "Benzene"),size = 3) +
+  
+  geom_line(data = averaged_data_17, aes(x = Period, y = Value, group = 1,color = "Formaldehyde"),size = 1) +
+  geom_point(data = averaged_data_17, aes(x = Period, y = Value, group = 1,color = "Formaldehyde"),size = 3) +
+
+  labs(title = "Concentration in Air ", subtitle = "Formaldehyde and Benzene",
+       x = "Time period",
+       y = "Annual average concentration ug/m3", color = "Substances") +
+   theme(legend.position = c(0.8, 0.8))
+
+# NO2 graph on the right
 NO2 <- ggplot(averaged_data_16, aes(x = Period, y = Value, group = 1)) +
   geom_point() +
   geom_line() +
   labs(title = "Average Nitrogen dioxide (NO2)",
        x = "Time period",
-       y = "Mean ppb") #+ 
-   #theme(axis.text.x = element_text(angle=90, hjust=1))
+       y = "Mean ppb") 
 
-
-
+# Combine two graphs into one horizontal arrangement
 plot_grid(Benzene_Formaldehyde, NO2, labels = NA)
 
 ```
-
+- From the above two graphs, road traffic is not a significant factor in air pollution in NYC. People may be switching to using hybrid or electric cars, which causes emissions from engines to gradually decrease.
   
 ## 2. Ozone 
-- As I researched on Google, Ozone is a major air quality hazard in the summer because of the weather conditions that favor its formation. This would be the reason why the dataset just record the Ozone amount during summers from 2009 to 2022.
+- According to Copernicus, the European Union's Earth observation program, Ozone is a major air quality hazard in the summer because of the weather conditions that favor its formation. This would be the reason why the dataset just record the Ozone amount during summers from 2009 to 2022.
+- Before we look at how Ozone concentration has changed , let's look at how the Ozone observations around NYC differs in 2009 and 2022. The unit for Ozone is ppb which means Parts per billion. 
 
-Sources: “Ozone Pollution, the Air Quality Hazard of the Summer.” Copernicus, atmosphere.copernicus.eu/ozone-pollution-air-quality-hazard-summer#:~:text=Ozone%20(O3)%2C%20is%20a,European%20Ambient%20Air%20Quality%20Directive. Accessed 19 Nov. 2024. 
-
-- Before we observe how Ozone concentration has changed , let's look at how it distributed at different neighborhoods around NYC in 2009 
-
-```{r, echo=FALSE}
+```{r,fig.width= 10, echo=FALSE}
 library(nycgeo)
 library(sf)
+library(cowplot)
 
 ozone3_2009 <- data %>% 
   filter(Name == "Ozone (O3)",`Time Period` == "Summer 2009")
-ozone3_2009
+ozone3_2022 <- data %>% 
+  filter(Name == "Ozone (O3)",`Time Period` == "Summer 2022")
 
 # Change data type for `Geo Join ID` to char before joining 
 ozone3_2009 <- ozone3_2009 %>% 
   mutate(`Geo Join ID`= as.character(`Geo Join ID`))
+ozone3_2022 <- ozone3_2022 %>% 
+  mutate(`Geo Join ID`= as.character(`Geo Join ID`))
 
-# Graphing 
-nyc_boundaries(geography = "cd") %>% 
+# Graphing 2009 
+ozone_2009_graph <- nyc_boundaries(geography = "cd") %>% 
   inner_join(ozone3_2009, by = c("borough_cd_id" = "Geo Join ID")) %>% 
   ggplot() +
   geom_sf(aes(fill = `Data Value`)) +
-  scale_fill_viridis_c(name = "Ozone 3 ppb", option = "inferno") +
+  scale_fill_viridis_c(name = "ppb", option = "inferno") +
   theme_void() +
-  theme(panel.grid = element_line(color = "transparent")) +
-  labs(title = "Which neighborhoods have high levels of Ozone 3 pollution?")
+  theme(panel.grid = element_line(color = "transparent"),legend.position = c(0.1, 0.7)) +
+  labs(title = "2009")
+
+# Graphing 2022
+ozone_2022_graph <- nyc_boundaries(geography = "cd") %>% 
+  inner_join(ozone3_2022, by = c("borough_cd_id" = "Geo Join ID")) %>% 
+  ggplot() +
+  geom_sf(aes(fill = `Data Value`)) +
+  scale_fill_viridis_c(name = "ppb", option = "inferno") +
+  theme_void() +
+  theme(panel.grid = element_line(color = "transparent"),legend.position = c(0.1, 0.7)) +
+  labs(title = "2022")
+
+# Combine 2009 and 2022
+plot_grid(ozone_2009_graph, ozone_2022_graph, labels = NA)
+
 ```
+
+- From the above two NYC maps showing the data of Ozone, we see that,in overall, the ozone levels have increased (slightly or highly) in all areas (switching from dark to light colors in 2022). To get more details about the changes, let find out which area or neighborhood has the lowest Ozone concentration in 2009, and see how it has changed in 2022.
+```{r, echo=FALSE}
+k9 <- data %>%
+  filter(Name == "Ozone (O3)",`Time Period` == "Summer 2009") %>% 
+  slice_min(`Data Value`, n =1) %>% 
+  select(`Geo Join ID`, `Geo Place Name`, ppb_amout_2009 = `Data Value`)
+
+k9
+```
+- We see that Midtown (CD5) had the lowest Ozone concentration in 2009, let see how it changed in 2022
+```{r, echo=FALSE}
+k22 <- data %>%
+  filter(Name == "Ozone (O3)",`Geo Place Name` == "Midtown (CD5)",`Time Period` == "Summer 2022") %>%
+  select(`Geo Join ID`, ppb_amout_2022 = `Data Value`)
+
+
+compare_9_22 <- inner_join(k9,k22, by = "Geo Join ID")
+
+
+with_change <- compare_9_22 %>% 
+  mutate(Percentage_Change = ppb_amout_2022/ppb_amout_2009*100)
+
+knitr::kable(with_change, caption = "Change of Ozone Concentration for Midtown (CD5) from 2009 to 2022")
+
+```
+
+- It is clear that the amount of ozone has increased significantly. It has certainly caused a lot of health-related problems to people in NYC. Here, the dataset also reported the number of cases related to Asthma emergency departments or hospitalization, Cardiac and respiratory deaths , all due to Ozone. But I will analyze those numbers when comparing Ozone with Fine particles (PM 2.5) in terms of harmful effects in the final section. 
+
+# Reference List
+1. Sources: “Ozone Pollution, the Air Quality Hazard of the Summer.” Copernicus, atmosphere.copernicus.eu/ozone-pollution-air-quality-hazard-summer#:~:text=Ozone%20(O3)%2C%20is%20a,European%20Ambient%20Air%20Quality%20Directive. Accessed 19 Nov. 2024. 
+
+2. 
+# For boiler .....
 ```{r}
 knitr::kable(averaged_data_14, caption = "Table of data_14")
 averaged_data_14
 ```
-
-
 
     
 
