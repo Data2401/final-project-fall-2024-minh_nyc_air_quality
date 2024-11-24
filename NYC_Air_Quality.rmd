@@ -9,11 +9,12 @@ output: html_document
 
 ## Introduction
 
-In our project, we analyze if air quality in New York City (NYC) increased
+- In our project, we analyze if air quality in New York City (NYC) increased
 during last years. For these purposes, we use New York City air quality
-surveillance data (https://catalog.data.gov/dataset/air-quality). We 
-investigate dynamics of 4 indicators of air quality. They are road traffic,  Ozone (O3),  Boiler Emissions, and Fine particles (PM 2.5).  Some of them are analyzed separately for adults and children such as Ozone (O3) and Fine particles (PM 2.5)  . Our dataset consists of 18,025 observations.
-One observation is value for each indicator, at some period and in a specific geo place. The values for all indexes that are presented on plots are averaged by geo places. In general, our data covers period 2005-2022 but for some indexes it is narrower.
+surveillance data (https://catalog.data.gov/dataset/air-quality). 
+- We investigate dynamics of 4 indicators of air quality. They are road traffic,  Ozone (O3),  Boiler Emissions, and Fine particles (PM 2.5).  Some of them are analyzed separately for adults and children such as Ozone (O3) and Fine particles (PM 2.5)  . 
+- Our dataset consists of 18,025 observations. One observation is value for each indicator, at some period and in a specific geo place. The values for all indexes that are presented on plots are averaged by geo places. In general, our data covers period 2005-2022 but for some indexes it is narrower.
+- The interesting thing is the dataset also provides information about the harmful effects like hospitalizations, emergency visits caused to humans by the above indicators.
 
 ## Data preparation
 
@@ -120,8 +121,8 @@ colnames(averaged_data_18) <- c("Period", "Value")
 library(tidyverse)
 
 traffic_plot <- ggplot(data = averaged_data_10, aes(x = Period, y = Value, group = 1,fill = "cars")) +
-  geom_col() +
-  geom_col(data = averaged_data_2, aes(x = Period, y = Value, group = 1,fill = "trucks")) +
+  geom_col(width = 0.5) +
+  geom_col(data = averaged_data_2, aes(x = Period, y = Value, group = 1,fill = "trucks"), width = 0.5) +
   
   
   labs(title = "Average annual vehicle miles traveled",
@@ -240,11 +241,63 @@ knitr::kable(with_change, caption = "Change of Ozone Concentration for Midtown (
 
 - It is clear that the amount of ozone has increased significantly. It has certainly caused a lot of health-related problems to people in NYC. Here, the dataset also reported the number of cases related to Asthma emergency departments or hospitalization, Cardiac and respiratory deaths , all due to Ozone. But I will analyze those numbers when comparing Ozone with Fine particles (PM 2.5) in terms of harmful effects in the final section. 
 
-# Reference List
-1. Sources: “Ozone Pollution, the Air Quality Hazard of the Summer.” Copernicus, atmosphere.copernicus.eu/ozone-pollution-air-quality-hazard-summer#:~:text=Ozone%20(O3)%2C%20is%20a,European%20Ambient%20Air%20Quality%20Directive. Accessed 19 Nov. 2024. 
+## 3. Fine particles (PM 2.5)
+- The Time Period for PM 2.5 includes "Annual Average" and a variety of seasons like "Summer 2010", "Winter 2009", ... so here I will take the data that has the Time Period begins with "Annual Average..." to analyze, and calculate the average amount of PM 2.5 for all neighborhoods by year also.  
 
-2. 
-# For boiler .....
+```{r, echo=FALSE}
+averaged_data_7$Period <- gsub("Annual Average ", "", averaged_data_7$Period)
+averaged_data_7
+
+# Plot for PM 2.5
+ggplot(averaged_data_7, aes(x = Period, y = Value, group = 1)) +
+  geom_col() +
+  labs(title = "Average Fine particles (PM 2.5)",
+       x = "Year",
+       y = "mcg/m3")
+
+
+```
+
+- In contrast to ozone, this indicator decreased slightly over the years. Average Fine particles (PM 2.5) fell from 10.986525 mcg/m3 in 2009 to 6.067376 mcg/m3 in 2022.
+- According to AIR QUALITY STANDARDS of e U.S. Environmental Protection Agency (EPA),The level of PM2.5 is above 35 micrograms per cubic meter (µg/m3) or mcg/m3 in the dataset,  over a 24-hour period are considered unhealthy. 
+- According to the data we currently have, the pm 2.5 level in NYC is still very safe. However, there are still data of cases on hospitalizations, emergencies, and even deaths related to pm 2.5. We will take a closer look at these harmful effects in the next section, and also compare them with ozone.
+
+## 4. Ozone vs PM 2.5, Which one causes more damage to humans? 
+- Firstly, we will look at the Estimated annual rate of emergency department visits per 100,000 adults or children, related to Asthma. The time for this estimation is a period of two years. They are "2015-2017", "2012-2014", "2017-2019" ,"2005-2007", and "2009-2011".
+
+```{r}
+# Above 18 Data
+add_colum_1 <- averaged_data_3_1 %>%   # Asthma by Ozone, above_18
+  mutate(Indicator = c("Ozone","Ozone","Ozone","Ozone","Ozone"))
+
+add_colum_1
+
+
+add_colum_2 <- averaged_data_11_1 %>% # Asthma by PM25, above_18  
+  mutate(Indicator = c("PM25","PM25","PM25","PM25","PM25"))
+add_colum_2
+
+pm_ozone_above_18 <- full_join(add_colum_1,add_colum_2, by = NULL)
+pm_ozone_above_18
+
+# TRY
+ggplot() +
+  geom_col(data = pm_ozone_above_18, aes(x = Period, y = Value, fill = Indicator),
+           position = "dodge") +
+  scale_fill_manual(values= c("#F8B195", "#355C7D"))+
+  labs(title = "Average asthma emergency department visits ",
+       x = "Time period",
+       y = "Per 100,000 adults",
+       subtitle = "- above 18")
+
+```
+
+## Reference List
+1. “Ozone Pollution, the Air Quality Hazard of the Summer.” Copernicus, atmosphere.copernicus.eu/ozone-pollution-air-quality-hazard-summer#:~:text=Ozone%20(O3)%2C%20is%20a,European%20Ambient%20Air%20Quality%20Directive. Accessed 19 Nov. 2024. 
+
+2. Revised air quality standards for particle ... Available at: https://www.epa.gov/sites/default/files/2016-04/documents/2012_aqi_factsheet.pdf (Accessed: 23 November 2024). 
+
+## END
 ```{r}
 knitr::kable(averaged_data_14, caption = "Table of data_14")
 averaged_data_14
