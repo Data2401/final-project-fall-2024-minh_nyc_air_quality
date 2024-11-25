@@ -266,21 +266,21 @@ ggplot(averaged_data_7, aes(x = Period, y = Value, group = 1)) +
 - Firstly, we will look at the Estimated annual rate of emergency department visits per 100,000 adults or children, related to Asthma. The time for this estimation is a period of two years. They are "2015-2017", "2012-2014", "2017-2019" ,"2005-2007", and "2009-2011".
 
 ```{r}
-# Above 18 Data
-add_colum_1 <- averaged_data_3_1 %>%   # Asthma by Ozone, above_18
+# Above 18 Asthma emergency department visits data
+add_colum_1 <- averaged_data_3_1 %>%   # by Ozone, above_18
   mutate(Indicator = c("Ozone","Ozone","Ozone","Ozone","Ozone"))
 
 add_colum_1
 
 
-add_colum_2 <- averaged_data_11_1 %>% # Asthma by PM25, above_18  
+add_colum_2 <- averaged_data_11_1 %>% # by PM25, above_18  
   mutate(Indicator = c("PM25","PM25","PM25","PM25","PM25"))
 add_colum_2
 
 pm_ozone_above_18 <- full_join(add_colum_1,add_colum_2, by = NULL)
 pm_ozone_above_18
 
-# TRY
+# Above 18 Asthma emergency department visits graph
 ggplot() +
   geom_col(data = pm_ozone_above_18, aes(x = Period, y = Value, fill = Indicator),
            position = "dodge") +
@@ -291,6 +291,63 @@ ggplot() +
        subtitle = "- above 18")
 
 ```
+```{r}
+# Below 18 Data
+add_colum_3 <- averaged_data_3_2 %>%   # Asthma by Ozone, below 18
+  mutate(Indicator = c("Ozone","Ozone","Ozone","Ozone","Ozone"))
+
+add_colum_3
+
+
+add_colum_4 <- averaged_data_11_2 %>% # Asthma by PM25, above_18  
+  mutate(Indicator = c("PM25","PM25","PM25","PM25","PM25"))
+add_colum_4
+
+pm_ozone_below_18 <- full_join(add_colum_3,add_colum_4, by = NULL)
+pm_ozone_below_18
+
+# Below 18 graph
+ggplot() +
+  geom_col(data = pm_ozone_below_18, aes(x = Period, y = Value, fill = Indicator),
+           position = "dodge") +
+  scale_fill_manual(values= c("#F8B195", "#355C7D"))+
+  labs(title = "Average asthma emergency department visits ",
+       x = "Time period",
+       y = "Per 100,000 children",
+       subtitle = "- below 18")
+```
+
+- Now we will look at the statistics on deaths caused by ozone and pm 2.5. Here I examined whether the data recorded the cases for both adults and children like the above asthma emergency department visits. But they just gave us the general Measure Info which are per 100,000 and per 100,000 adults, like the following code:   
+```{r, echo=TRUE}
+# Deaths due to Ozone
+child_adult <- unique(data_14$`Measure Info`)
+child_adult
+data_14
+# Deaths due to PM2.5
+child_adult_pm <- unique(data_15$`Measure Info`)
+child_adult_pm
+```
+
+- Due to Data inconsistency like the above explanation, I will assume that the estimated death rates related to both Ozone and PM 2.5 is for adults. Let see how those rates differ in the following graph:
+```{r}
+# Deaths due to Ozone
+data_14
+# Deaths due to PM2.5
+data_15
+
+# Graph
+ggplot(data_14, aes(`Time Period`, `Data Value`)) +
+  geom_point() +
+  geom_smooth(data = data_14, aes(`Time Period`, `Data Value`,group=-1, color = "Ozone")) +
+  geom_point(data = data_15, aes(`Time Period`, `Data Value`)) +
+  
+  geom_smooth(data = data_15, aes(`Time Period`, `Data Value`,group=-1, color = "PM 2.5")) +
+  labs(title = "Deaths rates due to Ozone and PM2.5",
+       x = "Time period",
+       y = "Per 100,000 people", color = "") +
+  theme(legend.position = c(0.9,0.95))
+```
+
 
 ## Reference List
 1. “Ozone Pollution, the Air Quality Hazard of the Summer.” Copernicus, atmosphere.copernicus.eu/ozone-pollution-air-quality-hazard-summer#:~:text=Ozone%20(O3)%2C%20is%20a,European%20Ambient%20Air%20Quality%20Directive. Accessed 19 Nov. 2024. 
