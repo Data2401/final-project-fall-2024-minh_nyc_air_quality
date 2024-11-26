@@ -1,29 +1,39 @@
 ---
-title: "NYC Air Quality"
+title: "New York City Air Quality"
 author: "Minh Tran"
-date: "11-14-2024"
-output: html_document
+date: "2024-11-26"
+output: 
+     slidy_presentation: default
+---
+```{r setup, include=FALSE} 
+knitr::opts_chunk$set(warning = FALSE, message = FALSE) 
+```
+
+# Introduction 
+- New York City (NYC) Open Data, https://catalog.data.gov/dataset/air-quality
+- Air Pollution - an ongoing, controversial and increasing problem.
+- The indicators: Road Traffic, Ozone, PM 2.5, and Boiler Emissions
+- Challenges ? Data Inconsistency
+- Any interesting thing ? Harmful heath effects such as asthma, cardiac and respiratory deaths are included. 
 
 ---
-# New York City air quality surveillance report
+# Outline {.bigger} 
 
-## Introduction
+1. Data Preparation
+2. Road Traffic
+3. Ozone
+4. PM 2.5 (particles less than 2.5 micrometers in diameter)
+5. Health Effects of Ozone and PM 2.5
 
-- In our project, we analyze if air quality in New York City (NYC) increased
-during last years. For these purposes, we use New York City air quality
-surveillance data (https://catalog.data.gov/dataset/air-quality). 
-- We investigate dynamics of 4 indicators of air quality. They are road traffic,  Ozone (O3),  Boiler Emissions, and Fine particles (PM 2.5).  Some of them are analyzed separately for adults and children such as Ozone (O3) and Fine particles (PM 2.5)  . 
-- Our dataset consists of 18,025 observations. One observation is value for each indicator, at some period and in a specific geo place. The values for all indexes that are presented on plots are averaged by geo places. In general, our data covers period 2005-2022 but for some indexes it is narrower.
-- The interesting thing is the dataset also provides information about the harmful effects like hospitalizations, emergency visits caused to humans by the above indicators.
+# Data Preparation
 
-## Data preparation
-
-```{r, warning = FALSE, message = FALSE}
-knitr::opts_chunk$set(echo = F, warning = FALSE, message = FALSE)
+```{r, echo=TRUE}
 library(readr)
 library(ggplot2)
 library(tidyverse)
-library(cowplot)
+# For NYC map
+library(nycgeo)
+library(sf)
 ```
 
 ```{r}
@@ -32,7 +42,6 @@ data <- read_csv("Air_Quality.csv", show_col_types = FALSE)
 glimpse(data)
 
 ```
-
 
 ```{r, echo = F}
 #Creation of subsets for every indicator:
@@ -115,9 +124,8 @@ colnames(averaged_data_17) <- c("Period", "Value")
 colnames(averaged_data_18) <- c("Period", "Value")
 ```
 
-## 1. Road traffic
-  - Let's look at how road traffic contributes to air pollution by looking at the number of miles traveled by cars and trucks.
-```{r echo = F}
+# Road Traffic
+```{r echo = F, fig.height= 4, message=FALSE}
 library(tidyverse)
 
 traffic_plot <- ggplot(data = averaged_data_10, aes(x = Period, y = Value, group = 1,fill = "cars")) +
@@ -132,11 +140,14 @@ traffic_plot <- ggplot(data = averaged_data_10, aes(x = Period, y = Value, group
 traffic_plot
 
 ```
-  
-- It's obviously that the number of miles traveled by cars and trucks increased from 2005 to 2019. In which, 3.767290 million miles per square mile to 4.477570 million miles per square mile for trucks, and 62.80374 million miles per square mile in 2005 to 72.91121 million miles per square mile in 2019 for car. 
-- To better understand how road traffic is affecting air quality, let's look at the toxic chemicals emitted from this factor. Here we will examine the measured amounts of Benzene, Nitrogen dioxide (NO2) and Formaldehyde. These three substances are mainly produced from Vehicles Exhaust Systems during the combustion process of the engines. Hence, let's look at how much they were released into the air. 
-    
-```{r fig.width= 10, echo = F}
+
+- Trucks: 3.7 to 4.4   
+- Cars: 62.8 to 72.9
+
+
+
+
+```{r fig.width= 10, echo = F, fig.height= 5}
 library(cowplot)
 #Remove Annual Average string in the data for NO2 plot  
 averaged_data_16$Period <- gsub("Annual Average ", "", averaged_data_16$Period)
@@ -166,13 +177,11 @@ NO2 <- ggplot(averaged_data_16, aes(x = Period, y = Value, group = 1)) +
 plot_grid(Benzene_Formaldehyde, NO2, labels = NA)
 
 ```
-- From the above two graphs, road traffic is not a significant factor in air pollution in NYC. People may be switching to using hybrid or electric cars, which causes emissions from engines to gradually decrease.
-  
-## 2. Ozone 
-- According to Copernicus, the European Union's Earth observation program, Ozone is a major air quality hazard in the summer because of the weather conditions that favor its formation. This would be the reason why the dataset just record the Ozone amount during summers from 2009 to 2022.
-- Before we look at how Ozone concentration has changed , let's look at how the Ozone observations around NYC differs in 2009 and 2022. The unit for Ozone is ppb which means Parts per billion. 
+- Road traffic is not a significant in air pollution at NYC
 
-```{r,fig.width= 10, echo=FALSE}
+# Ozone
+- Ozone concentration around NYC in 2009 and 2002
+```{r,fig.width= 9.6, echo=FALSE}
 library(nycgeo)
 library(sf)
 library(cowplot)
@@ -213,8 +222,9 @@ plot_grid(ozone_2009_graph, ozone_2022_graph, labels = NA)
 
 ```
 
-- From the above two NYC maps showing the data of Ozone, we see that,in overall, the ozone levels have increased (slightly or highly) in all areas (switching from dark to light colors in 2022). To get more details about the changes, let find out which area or neighborhood has the lowest Ozone concentration in 2009, and see how it has changed in 2022.
-```{r, echo=FALSE}
+
+- Which area had the lowest Ozone concentration in 2009 ? How was that amount in 2022 ?
+```{r, echo=FALSE, fig.width= 9.95}
 k9 <- data %>%
   filter(Name == "Ozone (O3)",`Time Period` == "Summer 2009") %>% 
   slice_min(`Data Value`, n =1) %>% 
@@ -222,8 +232,8 @@ k9 <- data %>%
 
 k9
 ```
-- We see that Midtown (CD5) had the lowest Ozone concentration in 2009, let see how it changed in 2022
-```{r, echo=FALSE}
+
+```{r, echo=FALSE, fig.width= 9.95}
 k22 <- data %>%
   filter(Name == "Ozone (O3)",`Geo Place Name` == "Midtown (CD5)",`Time Period` == "Summer 2022") %>%
   select(`Geo Join ID`, ppb_amout_2022 = `Data Value`)
@@ -239,12 +249,9 @@ knitr::kable(with_change, caption = "Change of Ozone Concentration for Midtown (
 
 ```
 
-- It is clear that the amount of ozone has increased significantly. It has certainly caused a lot of health-related problems to people in NYC. Here, the dataset also reported the number of cases related to Asthma emergency departments or hospitalization, Cardiac and respiratory deaths , all due to Ozone. But I will analyze those numbers when comparing Ozone with Fine particles (PM 2.5) in terms of harmful effects in the final section. 
-
-## 3. Fine particles (PM 2.5)
-- The Time Period for PM 2.5 includes "Annual Average" and a variety of seasons like "Summer 2010", "Winter 2009", ... so here I will take the data that has the Time Period begins with "Annual Average..." to analyze, and calculate the average amount of PM 2.5 for all neighborhoods by year also.  
-
-```{r, echo=FALSE}
+# PM 2.5
+- Average amount of PM 2.5 from 2009 to 2022. 
+```{r, echo=FALSE, fig.height= 5}
 averaged_data_7$Period <- gsub("Annual Average ", "", averaged_data_7$Period)
 averaged_data_7
 
@@ -258,82 +265,70 @@ ggplot(averaged_data_7, aes(x = Period, y = Value, group = 1)) +
 
 ```
 
-- In contrast to ozone, this indicator decreased slightly over the years. Average Fine particles (PM 2.5) fell from 10.986525 mcg/m3 in 2009 to 6.067376 mcg/m3 in 2022.
-- According to AIR QUALITY STANDARDS of  U.S. Environmental Protection Agency (EPA),The level of PM2.5 is above 35 micrograms per cubic meter (µg/m3) or mcg/m3 in the dataset,  over a 24-hour period are considered unhealthy. 
-- According to the data we currently have, the pm 2.5 level in NYC is still very safe. However, there are still data of cases on hospitalizations, emergencies, and even deaths related to pm 2.5. We will take a closer look at these harmful effects in the next section, and also compare them with ozone.
+- Dangerous level of PM 2.5: above 35 micrograms per cubic meter (µg/m3) or mcg/m3 (U.S. Environmental Protection Agency (EPA))
 
-## 4. Ozone vs PM 2.5, Which one causes more damage to humans? 
-- Firstly, we will look at the Estimated annual rate of emergency department visits per 100,000 adults or children, related to Asthma. The time for this estimation is a period of two years. They are "2015-2017", "2012-2014", "2017-2019" ,"2005-2007", and "2009-2011".
-
-```{r}
+# Ozone and PM 2.5, Which one is more harmful to humans?
+- Asthma emergency department visits
+```{r, echo=FALSE, fig.width= 9.6, fig.height= 5}
+library(cowplot)
 # Above 18 Asthma emergency department visits data
 add_colum_1 <- averaged_data_3_1 %>%   # by Ozone, above_18
   mutate(Indicator = c("Ozone","Ozone","Ozone","Ozone","Ozone"))
 
-add_colum_1
+
 
 
 add_colum_2 <- averaged_data_11_1 %>% # by PM25, above_18  
   mutate(Indicator = c("PM25","PM25","PM25","PM25","PM25"))
-add_colum_2
+
 
 pm_ozone_above_18 <- full_join(add_colum_1,add_colum_2, by = NULL)
-pm_ozone_above_18
+
 
 # Above 18 Asthma emergency department visits graph
-ggplot() +
+above_18 <- ggplot() +
   geom_col(data = pm_ozone_above_18, aes(x = Period, y = Value, fill = Indicator),
            position = "dodge") +
   scale_fill_manual(values= c("#F8B195", "#355C7D"))+
-  labs(title = "Average asthma emergency department visits ",
+  labs(title = "Adults ",
        x = "Time period",
-       y = "Per 100,000 adults",
-       subtitle = "- above 18")
+       y = "Per 100,000 adults")+
+  theme(legend.position = c(0.9,0.9))
 
-```
-```{r}
+
 # Below 18 Data
 add_colum_3 <- averaged_data_3_2 %>%   # Asthma by Ozone, below 18
   mutate(Indicator = c("Ozone","Ozone","Ozone","Ozone","Ozone"))
 
-add_colum_3
+
 
 
 add_colum_4 <- averaged_data_11_2 %>% # Asthma by PM25, above_18  
   mutate(Indicator = c("PM25","PM25","PM25","PM25","PM25"))
-add_colum_4
+
 
 pm_ozone_below_18 <- full_join(add_colum_3,add_colum_4, by = NULL)
-pm_ozone_below_18
+
 
 # Below 18 graph
-ggplot() +
+below_18 <- ggplot() +
   geom_col(data = pm_ozone_below_18, aes(x = Period, y = Value, fill = Indicator),
            position = "dodge") +
   scale_fill_manual(values= c("#F8B195", "#355C7D"))+
-  labs(title = "Average asthma emergency department visits ",
+  labs(title = "Children ",
        x = "Time period",
-       y = "Per 100,000 children",
-       subtitle = "- below 18")
+       y = "Per 100,000 children")+
+  theme(legend.position = c(0.9,0.9))
+
+# Combine
+plot_grid(below_18, above_18, labels = NA)
+
+
 ```
 
-- Now we will look at the statistics on deaths caused by ozone and pm 2.5. Here I examined whether the data recorded the cases for both adults and children like the above asthma emergency department visits. But they just gave us the general Measure Info which are per 100,000 and per 100,000 adults, like the following code:   
-```{r, echo=TRUE}
-# Deaths due to Ozone
-child_adult <- unique(data_14$`Measure Info`)
-child_adult
-data_14
-# Deaths due to PM2.5
-child_adult_pm <- unique(data_15$`Measure Info`)
-child_adult_pm
-```
+- Deaths due to Ozone and PM 2.5
+```{r, echo=FALSE, fig.width= 9.6, fig.height= 5}
 
-- Due to Data inconsistency like the above explanation, I will assume that the estimated death rates related to both Ozone and PM 2.5 is for adults. Let see how those rates differ in the following graph:
-```{r}
-# Deaths due to Ozone
-data_14
-# Deaths due to PM2.5
-data_15
 
 # Graph
 ggplot(data_14, aes(`Time Period`, `Data Value`)) +
@@ -347,19 +342,3 @@ ggplot(data_14, aes(`Time Period`, `Data Value`)) +
        y = "Per 100,000 people", color = "") +
   theme(legend.position = c(0.9,0.95))
 ```
-
-
-## Reference List
-1. “Ozone Pollution, the Air Quality Hazard of the Summer.” Copernicus, atmosphere.copernicus.eu/ozone-pollution-air-quality-hazard-summer#:~:text=Ozone%20(O3)%2C%20is%20a,European%20Ambient%20Air%20Quality%20Directive. Accessed 19 Nov. 2024. 
-
-2. Revised air quality standards for particle ... Available at: https://www.epa.gov/sites/default/files/2016-04/documents/2012_aqi_factsheet.pdf (Accessed: 23 November 2024). 
-
-## END
-```{r}
-knitr::kable(averaged_data_14, caption = "Table of data_14")
-averaged_data_14
-```
-
-    
-
-  
