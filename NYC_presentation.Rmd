@@ -1,0 +1,344 @@
+---
+title: "New York City Air Quality"
+author: "Minh Tran"
+date: "2024-11-26"
+output: 
+     slidy_presentation: default
+---
+```{r setup, include=FALSE} 
+knitr::opts_chunk$set(warning = FALSE, message = FALSE) 
+```
+
+# Introduction 
+- New York City (NYC) Open Data, https://catalog.data.gov/dataset/air-quality
+- Air Pollution - an ongoing, controversial and increasing problem.
+- The indicators: Road Traffic, Ozone, PM 2.5, and Boiler Emissions
+- Challenges ? Data Inconsistency
+- Any interesting thing ? Harmful heath effects such as asthma, cardiac and respiratory deaths are included. 
+
+---
+# Outline {.bigger} 
+
+1. Data Preparation
+2. Road Traffic
+3. Ozone
+4. PM 2.5 (particles less than 2.5 micrometers in diameter)
+5. Health Effects of Ozone and PM 2.5
+
+# Data Preparation
+
+```{r, echo=TRUE}
+library(readr)
+library(ggplot2)
+library(tidyverse)
+# For NYC map
+library(nycgeo)
+library(sf)
+```
+
+```{r}
+#Data loading
+data <- read_csv("Air_Quality.csv", show_col_types = FALSE)
+glimpse(data)
+
+```
+
+```{r, echo = F}
+#Creation of subsets for every indicator:
+data_1 <- data[data$Name == "Annual vehicle miles traveled",]
+data_2 <- data[data$Name == "Annual vehicle miles traveled (trucks)",]
+data_3_1 <- data[ (data$Name == "Asthma emergency departments visits due to Ozone") &
+                   (data$Measure == "Estimated annual rate (age 18+)"),]
+data_3_2 <- data[data$Name == "Asthma emergency departments visits due to Ozone" &
+                  (data$Measure == "Estimated annual rate (under age 18)"),]
+data_4 <- data[data$Name == "Boiler Emissions- Total NOx Emissions",]
+data_5 <- data[data$Name == "Boiler Emissions- Total SO2 Emissions",]
+data_6 <- data[data$Name == "Cardiovascular hospitalizations due to PM2.5 (age 40+)",]
+data_7 <- data[data$Name == "Fine particles (PM 2.5)" & grepl("Annual Average", data$`Time Period`),]
+data_8 <- data[data$Name == "Outdoor Air Toxics - Benzene",]
+data_9 <- data[data$Name == "Ozone (O3)" & grepl("Summer 20", data$`Time Period`),]
+data_10 <- data[data$Name == "Annual vehicle miles traveled (cars)",]
+data_11_1 <- data[(data$Name == "Asthma emergency department visits due to PM2.5") &
+                    (data$Measure == "Estimated annual rate (age 18+)"),]
+data_11_2 <- data[data$Name == "Asthma emergency department visits due to PM2.5" &
+                    (data$Measure == "Estimated annual rate (under age 18)"),]
+data_12_1 <- data[data$Name == "Asthma hospitalizations due to Ozone" &
+                  (data$Measure == "Estimated annual rate (age 18+)"),]
+data_12_2 <- data[data$Name == "Asthma hospitalizations due to Ozone" &
+                  (data$Measure == "Estimated annual rate (under age 18)"),]
+data_13 <- data[data$Name == "Boiler Emissions- Total PM2.5 Emissions",]
+data_14 <- data[data$Name == "Cardiac and respiratory deaths due to Ozone",]
+data_15 <- data[data$Name == "Deaths due to PM2.5",]
+data_16 <- data[data$Name == "Nitrogen dioxide (NO2)" & grepl("Annual Average", data$`Time Period`),]
+data_17 <- data[data$Name == "Outdoor Air Toxics - Formaldehyde",]
+data_18 <- data[data$Name == "Respiratory hospitalizations due to PM2.5 (age 20+)",]
+```
+
+```{r, echo = F}
+#Calculation of average values of indicators for every time period:
+averaged_data_1 <- aggregate(data_1$`Data Value`, by = list(data_1$`Time Period`), FUN = mean)
+averaged_data_2 <- aggregate(data_2$`Data Value`, by = list(data_2$`Time Period`), FUN = mean)
+averaged_data_3_1 <- aggregate(data_3_1$`Data Value`, by = list(data_3_1$`Time Period`), FUN = mean)
+averaged_data_3_2 <- aggregate(data_3_2$`Data Value`, by = list(data_3_2$`Time Period`), FUN = mean)
+averaged_data_4 <- aggregate(data_4$`Data Value`, by = list(data_4$`Time Period`), FUN = mean)
+averaged_data_5 <- aggregate(data_5$`Data Value`, by = list(data_5$`Time Period`), FUN = mean)
+averaged_data_6 <- aggregate(data_6$`Data Value`, by = list(data_6$`Time Period`), FUN = mean)
+averaged_data_7 <- aggregate(data_7$`Data Value`, by = list(data_7$`Time Period`), FUN = mean)
+averaged_data_8 <- aggregate(data_8$`Data Value`, by = list(data_8$`Time Period`), FUN = mean)
+averaged_data_9 <- aggregate(data_9$`Data Value`, by = list(data_9$`Time Period`), FUN = mean)
+averaged_data_10 <- aggregate(data_10$`Data Value`, by = list(data_10$`Time Period`), FUN = mean)
+averaged_data_11_1 <- aggregate(data_11_1$`Data Value`, by = list(data_11_1$`Time Period`), FUN = mean)
+averaged_data_11_2 <- aggregate(data_11_2$`Data Value`, by = list(data_11_2$`Time Period`), FUN = mean)
+averaged_data_12_1 <- aggregate(data_12_1$`Data Value`, by = list(data_12_1$`Time Period`), FUN = mean)
+averaged_data_12_2 <- aggregate(data_12_2$`Data Value`, by = list(data_12_2$`Time Period`), FUN = mean)
+averaged_data_13 <- aggregate(data_13$`Data Value`, by = list(data_13$`Time Period`), FUN = mean)
+averaged_data_14 <- aggregate(data_14$`Data Value`, by = list(data_14$`Time Period`), FUN = mean)
+averaged_data_15 <- aggregate(data_15$`Data Value`, by = list(data_15$`Time Period`), FUN = mean)
+averaged_data_16 <- aggregate(data_16$`Data Value`, by = list(data_16$`Time Period`), FUN = mean)
+averaged_data_17 <- aggregate(data_17$`Data Value`, by = list(data_17$`Time Period`), FUN = mean)
+averaged_data_18 <- aggregate(data_18$`Data Value`, by = list(data_18$`Time Period`), FUN = mean)
+```
+
+```{r, echo = F}
+#Renaming columns for averaged dataframes:
+colnames(averaged_data_1) <- c("Period", "Value")
+colnames(averaged_data_2) <- c("Period", "Value")
+colnames(averaged_data_3_1) <- c("Period", "Value")
+colnames(averaged_data_3_2) <- c("Period", "Value")
+colnames(averaged_data_4) <- c("Period", "Value")
+colnames(averaged_data_5) <- c("Period", "Value")
+colnames(averaged_data_6) <- c("Period", "Value")
+colnames(averaged_data_7) <- c("Period", "Value")
+colnames(averaged_data_8) <- c("Period", "Value")
+colnames(averaged_data_9) <- c("Period", "Value")
+colnames(averaged_data_10) <- c("Period", "Value")
+colnames(averaged_data_11_1) <- c("Period", "Value")
+colnames(averaged_data_11_2) <- c("Period", "Value")
+colnames(averaged_data_12_1) <- c("Period", "Value")
+colnames(averaged_data_12_2) <- c("Period", "Value")
+colnames(averaged_data_13) <- c("Period", "Value")
+colnames(averaged_data_14) <- c("Period", "Value")
+colnames(averaged_data_15) <- c("Period", "Value")
+colnames(averaged_data_16) <- c("Period", "Value")
+colnames(averaged_data_17) <- c("Period", "Value")
+colnames(averaged_data_18) <- c("Period", "Value")
+```
+
+# Road Traffic
+```{r echo = F, fig.height= 4, message=FALSE}
+library(tidyverse)
+
+traffic_plot <- ggplot(data = averaged_data_10, aes(x = Period, y = Value, group = 1,fill = "cars")) +
+  geom_col(width = 0.5) +
+  geom_col(data = averaged_data_2, aes(x = Period, y = Value, group = 1,fill = "trucks"), width = 0.5) +
+  
+  
+  labs(title = "Average annual vehicle miles traveled",
+       x = "Time period",
+       y = "Million miles per square mile", fill = "Vehicles")
+
+traffic_plot
+
+```
+
+- Trucks: 3.7 to 4.4   
+- Cars: 62.8 to 72.9
+
+
+
+
+```{r fig.width= 10, echo = F, fig.height= 5}
+library(cowplot)
+#Remove Annual Average string in the data for NO2 plot  
+averaged_data_16$Period <- gsub("Annual Average ", "", averaged_data_16$Period)
+
+# These two substances have the same unit of measurement, and time of observation so I put them into one graph. 
+Benzene_Formaldehyde <- ggplot(averaged_data_8, aes(x = Period, y = Value, group = 1,color = "Benzene")) +
+  geom_line(size = 1) + 
+  geom_point(data = averaged_data_8, aes(x = Period, y = Value, group = 1,color = "Benzene"),size = 3) +
+  
+  geom_line(data = averaged_data_17, aes(x = Period, y = Value, group = 1,color = "Formaldehyde"),size = 1) +
+  geom_point(data = averaged_data_17, aes(x = Period, y = Value, group = 1,color = "Formaldehyde"),size = 3) +
+
+  labs(title = "Concentration in Air ", subtitle = "Formaldehyde and Benzene",
+       x = "Time period",
+       y = "Annual average concentration ug/m3", color = "Substances") +
+   theme(legend.position = c(0.8, 0.8))
+
+# NO2 graph on the right
+NO2 <- ggplot(averaged_data_16, aes(x = Period, y = Value, group = 1)) +
+  geom_point() +
+  geom_line() +
+  labs(title = "Average Nitrogen dioxide (NO2)",
+       x = "Time period",
+       y = "Mean ppb") 
+
+# Combine two graphs into one horizontal arrangement
+plot_grid(Benzene_Formaldehyde, NO2, labels = NA)
+
+```
+- Road traffic is not a significant in air pollution at NYC
+
+# Ozone
+- Ozone concentration around NYC in 2009 and 2002
+```{r,fig.width= 9.6, echo=FALSE}
+library(nycgeo)
+library(sf)
+library(cowplot)
+
+ozone3_2009 <- data %>% 
+  filter(Name == "Ozone (O3)",`Time Period` == "Summer 2009")
+ozone3_2022 <- data %>% 
+  filter(Name == "Ozone (O3)",`Time Period` == "Summer 2022")
+
+# Change data type for `Geo Join ID` to char before joining 
+ozone3_2009 <- ozone3_2009 %>% 
+  mutate(`Geo Join ID`= as.character(`Geo Join ID`))
+ozone3_2022 <- ozone3_2022 %>% 
+  mutate(`Geo Join ID`= as.character(`Geo Join ID`))
+
+# Graphing 2009 
+ozone_2009_graph <- nyc_boundaries(geography = "cd") %>% 
+  inner_join(ozone3_2009, by = c("borough_cd_id" = "Geo Join ID")) %>% 
+  ggplot() +
+  geom_sf(aes(fill = `Data Value`)) +
+  scale_fill_viridis_c(name = "ppb", option = "inferno") +
+  theme_void() +
+  theme(panel.grid = element_line(color = "transparent"),legend.position = c(0.1, 0.7)) +
+  labs(title = "2009")
+
+# Graphing 2022
+ozone_2022_graph <- nyc_boundaries(geography = "cd") %>% 
+  inner_join(ozone3_2022, by = c("borough_cd_id" = "Geo Join ID")) %>% 
+  ggplot() +
+  geom_sf(aes(fill = `Data Value`)) +
+  scale_fill_viridis_c(name = "ppb", option = "inferno") +
+  theme_void() +
+  theme(panel.grid = element_line(color = "transparent"),legend.position = c(0.1, 0.7)) +
+  labs(title = "2022")
+
+# Combine 2009 and 2022
+plot_grid(ozone_2009_graph, ozone_2022_graph, labels = NA)
+
+```
+
+
+- Which area had the lowest Ozone concentration in 2009 ? How was that amount in 2022 ?
+```{r, echo=FALSE, fig.width= 9.95}
+k9 <- data %>%
+  filter(Name == "Ozone (O3)",`Time Period` == "Summer 2009") %>% 
+  slice_min(`Data Value`, n =1) %>% 
+  select(`Geo Join ID`, `Geo Place Name`, ppb_amout_2009 = `Data Value`)
+
+k9
+```
+
+```{r, echo=FALSE, fig.width= 9.95}
+k22 <- data %>%
+  filter(Name == "Ozone (O3)",`Geo Place Name` == "Midtown (CD5)",`Time Period` == "Summer 2022") %>%
+  select(`Geo Join ID`, ppb_amout_2022 = `Data Value`)
+
+
+compare_9_22 <- inner_join(k9,k22, by = "Geo Join ID")
+
+
+with_change <- compare_9_22 %>% 
+  mutate(Percentage_Change = ppb_amout_2022/ppb_amout_2009*100)
+
+knitr::kable(with_change, caption = "Change of Ozone Concentration for Midtown (CD5) from 2009 to 2022")
+
+```
+
+# PM 2.5
+- Average amount of PM 2.5 from 2009 to 2022. 
+```{r, echo=FALSE, fig.height= 5}
+averaged_data_7$Period <- gsub("Annual Average ", "", averaged_data_7$Period)
+averaged_data_7
+
+# Plot for PM 2.5
+ggplot(averaged_data_7, aes(x = Period, y = Value, group = 1)) +
+  geom_col() +
+  labs(title = "Average Fine particles (PM 2.5)",
+       x = "Year",
+       y = "mcg/m3")
+
+
+```
+
+- Dangerous level of PM 2.5: above 35 micrograms per cubic meter (µg/m3) or mcg/m3 (U.S. Environmental Protection Agency (EPA))
+
+# Ozone and PM 2.5, Which one is more harmful to humans?
+- Asthma emergency department visits
+```{r, echo=FALSE, fig.width= 9.6, fig.height= 5}
+library(cowplot)
+# Above 18 Asthma emergency department visits data
+add_colum_1 <- averaged_data_3_1 %>%   # by Ozone, above_18
+  mutate(Indicator = c("Ozone","Ozone","Ozone","Ozone","Ozone"))
+
+
+
+
+add_colum_2 <- averaged_data_11_1 %>% # by PM25, above_18  
+  mutate(Indicator = c("PM25","PM25","PM25","PM25","PM25"))
+
+
+pm_ozone_above_18 <- full_join(add_colum_1,add_colum_2, by = NULL)
+
+
+# Above 18 Asthma emergency department visits graph
+above_18 <- ggplot() +
+  geom_col(data = pm_ozone_above_18, aes(x = Period, y = Value, fill = Indicator),
+           position = "dodge") +
+  scale_fill_manual(values= c("#F8B195", "#355C7D"))+
+  labs(title = "Adults ",
+       x = "Time period",
+       y = "Per 100,000 adults")+
+  theme(legend.position = c(0.9,0.9))
+
+
+# Below 18 Data
+add_colum_3 <- averaged_data_3_2 %>%   # Asthma by Ozone, below 18
+  mutate(Indicator = c("Ozone","Ozone","Ozone","Ozone","Ozone"))
+
+
+
+
+add_colum_4 <- averaged_data_11_2 %>% # Asthma by PM25, above_18  
+  mutate(Indicator = c("PM25","PM25","PM25","PM25","PM25"))
+
+
+pm_ozone_below_18 <- full_join(add_colum_3,add_colum_4, by = NULL)
+
+
+# Below 18 graph
+below_18 <- ggplot() +
+  geom_col(data = pm_ozone_below_18, aes(x = Period, y = Value, fill = Indicator),
+           position = "dodge") +
+  scale_fill_manual(values= c("#F8B195", "#355C7D"))+
+  labs(title = "Children ",
+       x = "Time period",
+       y = "Per 100,000 children")+
+  theme(legend.position = c(0.9,0.9))
+
+# Combine
+plot_grid(below_18, above_18, labels = NA)
+
+
+```
+
+- Deaths due to Ozone and PM 2.5
+```{r, echo=FALSE, fig.width= 9.6, fig.height= 5}
+
+
+# Graph
+ggplot(data_14, aes(`Time Period`, `Data Value`)) +
+  geom_point() +
+  geom_smooth(data = data_14, aes(`Time Period`, `Data Value`,group=-1, color = "Ozone")) +
+  geom_point(data = data_15, aes(`Time Period`, `Data Value`)) +
+  
+  geom_smooth(data = data_15, aes(`Time Period`, `Data Value`,group=-1, color = "PM 2.5")) +
+  labs(title = "Deaths rates due to Ozone and PM2.5",
+       x = "Time period",
+       y = "Per 100,000 people", color = "") +
+  theme(legend.position = c(0.9,0.95))
+```
