@@ -1,14 +1,25 @@
 ---
-title: "NYC Air Quality"
+title: "Data Science 1 - Final Project"
+subtitle: 'Professor: Dr. Katherine Shoemaker'
 author: "Minh Tran"
 date: "11-14-2024"
 output: html_document
 
 ---
-# New York City air quality surveillance report
+
+<style>
+.centered {
+  text-align: center;
+  font-size: 30px;
+}
+</style>
+
+<div class="centered">
+New York City Air Quality Surveillance Report
+</div>
+
 
 ## Introduction
-
 - In our project, we analyze if air quality in New York City (NYC) increased
 during last years. For these purposes, we use New York City air quality
 surveillance data (https://catalog.data.gov/dataset/air-quality). 
@@ -26,44 +37,75 @@ library(tidyverse)
 library(cowplot)
 ```
 
-```{r}
+```{r, echo=TRUE}
 #Data loading
 data <- read_csv("Air_Quality.csv", show_col_types = FALSE)
 glimpse(data)
 
 ```
 
-
-```{r, echo = F}
-#Creation of subsets for every indicator:
+## Organize the data into each indicator and related effects.
+```{r, echo = T}
+# Road Traffic
 data_1 <- data[data$Name == "Annual vehicle miles traveled",]
 data_2 <- data[data$Name == "Annual vehicle miles traveled (trucks)",]
+data_10 <- data[data$Name == "Annual vehicle miles traveled (cars)",]
+
+# Road Traffic - Emissions: Benzene, Formaldehyde, and Nitrogen dioxide (NO2)
+data_8 <- data[data$Name == "Outdoor Air Toxics - Benzene",]
+data_17 <- data[data$Name == "Outdoor Air Toxics - Formaldehyde",]
+data_16 <- data[data$Name == "Nitrogen dioxide (NO2)" & grepl("Annual Average", data$`Time Period`),]
+
+# Ozone
+data_9 <- data[data$Name == "Ozone (O3)" & grepl("Summer 20", data$`Time Period`),]
+
+# Ozone - Asthma emergency departments
 data_3_1 <- data[ (data$Name == "Asthma emergency departments visits due to Ozone") &
                    (data$Measure == "Estimated annual rate (age 18+)"),]
 data_3_2 <- data[data$Name == "Asthma emergency departments visits due to Ozone" &
                   (data$Measure == "Estimated annual rate (under age 18)"),]
-data_4 <- data[data$Name == "Boiler Emissions- Total NOx Emissions",]
-data_5 <- data[data$Name == "Boiler Emissions- Total SO2 Emissions",]
-data_6 <- data[data$Name == "Cardiovascular hospitalizations due to PM2.5 (age 40+)",]
+
+# Ozone - Deaths
+data_14 <- data[data$Name == "Cardiac and respiratory deaths due to Ozone",]
+
+# Fine particles (PM 2.5)
 data_7 <- data[data$Name == "Fine particles (PM 2.5)" & grepl("Annual Average", data$`Time Period`),]
-data_8 <- data[data$Name == "Outdoor Air Toxics - Benzene",]
-data_9 <- data[data$Name == "Ozone (O3)" & grepl("Summer 20", data$`Time Period`),]
-data_10 <- data[data$Name == "Annual vehicle miles traveled (cars)",]
+
+# PM 2.5 - Asthma emergency departments
 data_11_1 <- data[(data$Name == "Asthma emergency department visits due to PM2.5") &
                     (data$Measure == "Estimated annual rate (age 18+)"),]
 data_11_2 <- data[data$Name == "Asthma emergency department visits due to PM2.5" &
                     (data$Measure == "Estimated annual rate (under age 18)"),]
+
+# PM 2.5 Deaths
+data_15 <- data[data$Name == "Deaths due to PM2.5",]
+
+```
+
+## Data that I did not use
+- Hospitalizations due to Ozone and PM 2.5: The ages range for these two are not consistent. For PM 2.5, the data provided with age 20+ and 40+, while all adults ( above 18)
+and children (under 18) for Ozone.
+```{r, echo=TRUE}
+# PM 2.5 - Hospitalizations 
+data_6 <- data[data$Name == "Cardiovascular hospitalizations due to PM2.5 (age 40+)",]
+data_18 <- data[data$Name == "Respiratory hospitalizations due to PM2.5 (age 20+)",]
+
+# Ozone - Hospitalizations
 data_12_1 <- data[data$Name == "Asthma hospitalizations due to Ozone" &
                   (data$Measure == "Estimated annual rate (age 18+)"),]
 data_12_2 <- data[data$Name == "Asthma hospitalizations due to Ozone" &
                   (data$Measure == "Estimated annual rate (under age 18)"),]
-data_13 <- data[data$Name == "Boiler Emissions- Total PM2.5 Emissions",]
-data_14 <- data[data$Name == "Cardiac and respiratory deaths due to Ozone",]
-data_15 <- data[data$Name == "Deaths due to PM2.5",]
-data_16 <- data[data$Name == "Nitrogen dioxide (NO2)" & grepl("Annual Average", data$`Time Period`),]
-data_17 <- data[data$Name == "Outdoor Air Toxics - Formaldehyde",]
-data_18 <- data[data$Name == "Respiratory hospitalizations due to PM2.5 (age 20+)",]
 ```
+
+- Boiler Emissions: NYC government just observed this indicator in 2013 and 2015. 
+```{r, echo=TRUE}
+# Boiler Emissions 
+data_4 <- data[data$Name == "Boiler Emissions- Total NOx Emissions",]
+data_5 <- data[data$Name == "Boiler Emissions- Total SO2 Emissions",]
+data_13 <- data[data$Name == "Boiler Emissions- Total PM2.5 Emissions",]
+
+```
+
 
 ```{r, echo = F}
 #Calculation of average values of indicators for every time period:
@@ -171,6 +213,7 @@ plot_grid(Benzene_Formaldehyde, NO2, labels = NA)
 ## 2. Ozone 
 - According to Copernicus, the European Union's Earth observation program, Ozone is a major air quality hazard in the summer because of the weather conditions that favor its formation. This would be the reason why the dataset just record the Ozone amount during summers from 2009 to 2022.
 - Before we look at how Ozone concentration has changed , let's look at how the Ozone observations around NYC differs in 2009 and 2022. The unit for Ozone is ppb which means Parts per billion. 
+- From the presentation feedback "The palette for the map coloring is inverted " , I found out how to change the order of color in the function scale_fill_viridis_c() when  rendering NYC map, just put *direction = -1* . 
 
 ```{r,fig.width= 10, echo=FALSE}
 library(nycgeo)
@@ -193,7 +236,7 @@ ozone_2009_graph <- nyc_boundaries(geography = "cd") %>%
   inner_join(ozone3_2009, by = c("borough_cd_id" = "Geo Join ID")) %>% 
   ggplot() +
   geom_sf(aes(fill = `Data Value`)) +
-  scale_fill_viridis_c(name = "ppb", option = "inferno") +
+  scale_fill_viridis_c(name = "ppb", option = "inferno", direction = -1) +
   theme_void() +
   theme(panel.grid = element_line(color = "transparent"),legend.position = c(0.1, 0.7)) +
   labs(title = "2009")
@@ -203,7 +246,7 @@ ozone_2022_graph <- nyc_boundaries(geography = "cd") %>%
   inner_join(ozone3_2022, by = c("borough_cd_id" = "Geo Join ID")) %>% 
   ggplot() +
   geom_sf(aes(fill = `Data Value`)) +
-  scale_fill_viridis_c(name = "ppb", option = "inferno") +
+  scale_fill_viridis_c(name = "ppb", option = "inferno", direction = -1) +
   theme_void() +
   theme(panel.grid = element_line(color = "transparent"),legend.position = c(0.1, 0.7)) +
   labs(title = "2022")
@@ -263,78 +306,78 @@ ggplot(averaged_data_7, aes(x = Period, y = Value, group = 1)) +
 - According to the data we currently have, the pm 2.5 level in NYC is still very safe. However, there are still data of cases on hospitalizations, emergencies, and even deaths related to pm 2.5. We will take a closer look at these harmful effects in the next section, and also compare them with ozone.
 
 ## 4. Ozone vs PM 2.5, Which one causes more damage to humans? 
-- Firstly, we will look at the Estimated annual rate of emergency department visits per 100,000 adults or children, related to Asthma. The time for this estimation is a period of two years. They are "2015-2017", "2012-2014", "2017-2019" ,"2005-2007", and "2009-2011".
+- Firstly, we will look at the Estimated annual rate of **Asthma emergency department visits** per 100,000 adults or children. The time for this estimation is a period of two years. They are "2015-2017", "2012-2014", "2017-2019" ,"2005-2007", and "2009-2011".
 
-```{r}
+```{r, echo=FALSE, fig.width= 9.6, fig.height= 5}
+library(cowplot)
 # Above 18 Asthma emergency department visits data
 add_colum_1 <- averaged_data_3_1 %>%   # by Ozone, above_18
   mutate(Indicator = c("Ozone","Ozone","Ozone","Ozone","Ozone"))
 
-add_colum_1
+
 
 
 add_colum_2 <- averaged_data_11_1 %>% # by PM25, above_18  
   mutate(Indicator = c("PM25","PM25","PM25","PM25","PM25"))
-add_colum_2
+
 
 pm_ozone_above_18 <- full_join(add_colum_1,add_colum_2, by = NULL)
-pm_ozone_above_18
+
 
 # Above 18 Asthma emergency department visits graph
-ggplot() +
+above_18 <- ggplot() +
   geom_col(data = pm_ozone_above_18, aes(x = Period, y = Value, fill = Indicator),
            position = "dodge") +
   scale_fill_manual(values= c("#F8B195", "#355C7D"))+
-  labs(title = "Average asthma emergency department visits ",
+  labs(title = "Adults ",
        x = "Time period",
-       y = "Per 100,000 adults",
-       subtitle = "- above 18")
+       y = "Per 100,000 adults")+
+  theme(legend.position = c(0.9,0.9))
 
-```
-```{r}
+
 # Below 18 Data
 add_colum_3 <- averaged_data_3_2 %>%   # Asthma by Ozone, below 18
   mutate(Indicator = c("Ozone","Ozone","Ozone","Ozone","Ozone"))
 
-add_colum_3
+
 
 
 add_colum_4 <- averaged_data_11_2 %>% # Asthma by PM25, above_18  
   mutate(Indicator = c("PM25","PM25","PM25","PM25","PM25"))
-add_colum_4
+
 
 pm_ozone_below_18 <- full_join(add_colum_3,add_colum_4, by = NULL)
-pm_ozone_below_18
+
 
 # Below 18 graph
-ggplot() +
+below_18 <- ggplot() +
   geom_col(data = pm_ozone_below_18, aes(x = Period, y = Value, fill = Indicator),
            position = "dodge") +
   scale_fill_manual(values= c("#F8B195", "#355C7D"))+
-  labs(title = "Average asthma emergency department visits ",
+  labs(title = "Children ",
        x = "Time period",
-       y = "Per 100,000 children",
-       subtitle = "- below 18")
+       y = "Per 100,000 children")+
+  theme(legend.position = c(0.9,0.9))
+
+# Combine
+plot_grid(below_18, above_18, labels = NA)
+
+
 ```
 
-- Now we will look at the statistics on deaths caused by ozone and pm 2.5. Here I examined whether the data recorded the cases for both adults and children like the above asthma emergency department visits. But they just gave us the general Measure Info which are per 100,000 and per 100,000 adults, like the following code:   
+- From the above two graphs, we see that emergency department visits related to Asthma caused by both Ozone and pm 2.5 ,all decreased over the years. In the period of 2005-2007, the data of PM 2.5 was more than Ozone. However, from 2009 on wards, Ozone brought about more emergency visits than PM 2.5.   
+- Now Let's look further on the statistics of deaths caused by ozone and pm 2.5. Here I examined whether the data recorded the cases for both adults and children like the above asthma emergency department visits. But they just gave us the general Measure Info which are per 100,000 and per 100,000 adults, like the following code:   
 ```{r, echo=TRUE}
 # Deaths due to Ozone
 child_adult <- unique(data_14$`Measure Info`)
 child_adult
-data_14
+
 # Deaths due to PM2.5
 child_adult_pm <- unique(data_15$`Measure Info`)
 child_adult_pm
 ```
-
 - Due to Data inconsistency like the above explanation, I will assume that the estimated death rates related to both Ozone and PM 2.5 is for adults. Let see how those rates differ in the following graph:
 ```{r}
-# Deaths due to Ozone
-data_14
-# Deaths due to PM2.5
-data_15
-
 # Graph
 ggplot(data_14, aes(`Time Period`, `Data Value`)) +
   geom_point() +
@@ -347,18 +390,31 @@ ggplot(data_14, aes(`Time Period`, `Data Value`)) +
        y = "Per 100,000 people", color = "") +
   theme(legend.position = c(0.9,0.95))
 ```
+- In contrast to emergency visits, PM 2.5 caused more deaths to humans then Ozone. Hence, it is a bit difficult to conclude which indicator is more dangerous for humans at this time. The long exposure to both will lead to many respiratory and cardiac diseases like Asthma, permanent lung damage and even cancers (National Library of Medicine). It actually depends on another factors like treatments, people awareness on air pollution. Furthermore, the dataset just cover 5 boroughs of New York City, that would be not enough to finalize PM 2.5 or Ozone is more harmful.  
+
+## 5. Summary and Conclusion
+
+## 6. Reference List
+- Liu, Cristina Su, et al. “Long-term Association of Air Pollution and Incidence of Lung Cancer Among Older Americans: A National Study in the Medicare Cohort.” Environment International, vol. 181, Oct. 2023, p. 108266. https://doi.org/10.1016/j.envint.2023.108266.
+
+- “Ozone Pollution, the Air Quality Hazard of the Summer.” Copernicus, atmosphere.copernicus.eu/ozone-pollution-air-quality-hazard-summer#:~:text=Ozone%20(O3)%2C%20is%20a,European%20Ambient%20Air%20Quality%20Directive. Accessed 19 Nov. 2024. 
+- Revised air quality standards for particle ... Available at: https://www.epa.gov/sites/default/files/2016-04/documents/2012_aqi_factsheet.pdf (Accessed: 23 November 2024).
 
 
-## Reference List
-1. “Ozone Pollution, the Air Quality Hazard of the Summer.” Copernicus, atmosphere.copernicus.eu/ozone-pollution-air-quality-hazard-summer#:~:text=Ozone%20(O3)%2C%20is%20a,European%20Ambient%20Air%20Quality%20Directive. Accessed 19 Nov. 2024. 
 
-2. Revised air quality standards for particle ... Available at: https://www.epa.gov/sites/default/files/2016-04/documents/2012_aqi_factsheet.pdf (Accessed: 23 November 2024). 
 
-## END
-```{r}
-knitr::kable(averaged_data_14, caption = "Table of data_14")
-averaged_data_14
-```
+<style>
+.centered {
+  text-align: center;
+  font-size: 30px;
+}
+</style>
+
+<div class="centered">
+THE END
+</div>
+
+
 
     
 
