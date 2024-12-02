@@ -256,7 +256,7 @@ plot_grid(ozone_2009_graph, ozone_2022_graph, labels = NA)
 
 ```
 
-- From the above two NYC maps showing the data of Ozone, we see that,in overall, the ozone levels have increased (slightly or highly) in all areas (switching from dark to light colors in 2022). To get more details about the changes, let find out which area or neighborhood has the lowest Ozone concentration in 2009, and see how it has changed in 2022.
+- From the above two NYC maps showing the data of Ozone, we see that,in overall, the ozone levels have increased (slightly or highly) in all areas (switching from light to dark colors in 2022). To get more details about the changes, let find out which area or neighborhood has the lowest Ozone concentration in 2009, and see how it has changed in 2022.
 ```{r, echo=FALSE}
 k9 <- data %>%
   filter(Name == "Ozone (O3)",`Time Period` == "Summer 2009") %>% 
